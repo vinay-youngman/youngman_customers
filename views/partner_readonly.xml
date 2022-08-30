@@ -1,0 +1,114 @@
+<odoo>
+    <data>
+        <record id="view_partner_form_in_beta_inherit" model="ir.ui.view">
+            <field name="name">res.partner.youngman.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <field name="vat" position="after">
+                    <field name="in_beta" readonly="1"/>
+
+                    <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
+                    <field name="bill_submission" string="Bill Submission" attrs="{'no_create_edit': True, 'no_create': True, 'create_edit':False, 'create':False, 'invisible': [('is_company', '=', False)]}"/>
+<!--                    <field name="security_letter" string="Security Letter"/>-->
+                    <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
+                    <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
+                    <field name="security_cheque" string="Security Cheque" attrs="{'invisible': [('is_company', '=', False)]}"/>
+
+                    <field name="sap_ref" string="SAP Ref" invisible="1"/>
+                    <field name="is_customer_branch" invisible="1"/>
+                </field>
+                <field name="category_id" position="after">
+                    <field name="channel_tag_ids" widget="many2many_tags" placeholder="Channel Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>
+                    <field name="bd_tag_ids" widget="many2many_tags" placeholder="BD Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>
+                </field>
+
+<!--                <xpath expr="//notebook[@colspan='4']"  attrs="{'invisible': [('is_company', '=', False)]}" >-->
+<!--                </xpath>-->
+
+                <xpath expr="//group[@name='sale']">
+                    <field name="credit_limit" string="Credit Limit"/>
+                    <field name="credit_rating" string="Credit Rating"/>
+                    <field name="user_recievable_id" string="User Recievable"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_partner_form_inherit" model="ir.ui.view">
+            <field name="name">res.partner.form</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+            	<xpath expr="//notebook">
+                    <page string="Branches" name="branches" autofocus="autofocus">
+                            <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
+                                <kanban>
+                                    <field name="name"/>
+
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_details">
+                                                    <field name="name"/>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                                <form string="Branch / Address">
+                                    <sheet>
+                                        <!-- parent_id and type fields needed in attrs in base_address_city module which overwrites
+                                        _fields_view_get() of partner. It would be better to put those fields there but the web client
+                                        dosen't support when a field is displayed several times in the same view.-->
+                                        <field name="parent_id" invisible="1"/>
+                                        <hr/>
+                                        <group>
+                                            <group>
+                                                <field name="name" string="Branch Name" attrs="{'required' : True}"/>
+                                                <field name="gstn" string="GSTN" attrs="{'required' : True}" />
+                                                <field name="email" widget="email"/>
+                                                <field name="phone" widget="phone"/>
+                                                <field name="mobile" widget="phone"/>
+                                                <field name="company_id" invisible="1"/>
+                                                <field name="sap_ref" string="SAP Ref" invisible="1"/>
+                                                <field name="is_company" context="{'default_is_company': True}" attrs="{'invisible' : True}"/>
+                                                <field name="is_customer_branch" context="{'default_is_customer_branch': True}" attrs="{'invisible' : True}"/>
+
+                                            </group>
+
+                                            <group>
+                                                <label for="street" string="Billing Address"/>
+                                                <div>
+                                                    <div class="o_address_format" name="div_address">
+                                                    <field name="street" placeholder="Street..." class="o_address_street"/>
+                                                    <field name="street2" placeholder="Street 2..." class="o_address_street"/>
+                                                    <field name="city" placeholder="City" class="o_address_city"/>
+                                                    <field name="state_id" class="o_address_state" placeholder="State" options="{'no_open': True, 'no_quick_create': True}" context="{'country_id': country_id, 'default_country_id': country_id, 'zip': zip}"/>
+                                                    <field name="zip" placeholder="ZIP" class="o_address_zip"/>
+                                                    <field name="country_id" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>
+                                                </div>
+                                                </div>
+                                                <label for="mailing_street" string="Mailing Address"/>
+                                                <div>
+                                                    <div class="o_address_format" name="div_address">
+                                                    <field name="mailing_street" placeholder="Street..." class="o_address_street"/>
+                                                    <field name="mailing_street2" placeholder="Street 2..." class="o_address_street"/>
+                                                    <field name="mailing_city" placeholder="City" class="o_address_city"/>
+                                                    <field name="mailing_state_id" class="o_address_state" placeholder="State" options="{'no_open': True, 'no_quick_create': True}" context="{'country_id': country_id, 'default_country_id': country_id, 'zip': zip}"/>
+                                                    <field name="mailing_zip" placeholder="ZIP" class="o_address_zip"/>
+                                                    <field name="mailing_country_id" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>
+                                                    </div>
+                                                </div>
+                                                <field name="same_addr" string="Same as Billing Address"/>
+
+                                            </group>
+                                        </group>
+
+                                    </sheet>
+                                </form>
+                            </field>
+                    </page>
+            	</xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

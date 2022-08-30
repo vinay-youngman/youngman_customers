@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<odoo>
+    <data>
+        <record id="view_crm_lead_in_beta_inherit" model="ir.ui.view">
+            <field name="name">crm.lead.in_beta.inherit</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+            <field name="arch" type="xml">
+                <field name="tag_ids" position="after">
+                    <field name="in_beta" attrs="{'invisible': [('stage_id', '!=', 1)], 'readonly':[('in_beta', '=', True)]}"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</odoo>

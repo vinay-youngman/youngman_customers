@@ -1,0 +1,16 @@
+<odoo>
+  <data>
+      <record  model="ir.ui.view" id="view_partner_form_notag_inherit">
+          <field name="name">res.partner.notag.inherit</field>
+          <field name="model">res.partner</field>
+          <field name="inherit_id" ref="base.view_partner_form"/>
+          <field name="arch" type="xml">
+              <field name="category_id" position="attributes">
+                  <attribute name="options">
+                      {'color_field': 'color', 'no_create_edit': True, 'no_create': True, 'create_edit':False, 'create':False}
+                  </attribute>
+              </field>
+          </field>
+      </record>
+  </data>
+</odoo>

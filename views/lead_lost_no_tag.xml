@@ -1,0 +1,14 @@
+<odoo>
+  <data>
+      <record  model="ir.ui.view" id="crm_lost_reason_view_search_inherit">
+          <field name="name">crm.lead.lost.inherit</field>
+          <field name="model">crm.lead.lost</field>
+          <field name="inherit_id" ref="crm.crm_lead_lost_view_form"/>
+          <field name="arch" type="xml">
+              <field name="lost_reason_id" position="attributes">
+                  <attribute name="options">{'no_create_edit': True, 'no_create': True}</attribute>
+              </field>
+          </field>
+      </record>
+  </data>
+</odoo>
