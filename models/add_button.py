@@ -19,3 +19,4 @@ class CrmLead(models.Model):
     def button_function(self):
         self.in_beta = True
         self.partner_id.in_beta = True
+

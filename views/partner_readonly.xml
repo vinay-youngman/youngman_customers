@@ -41,15 +41,23 @@
             <field name="arch" type="xml">
             	<xpath expr="//notebook">
                     <page string="Branches" name="branches" autofocus="autofocus">
-                            <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
+                            <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_is_customer_branch': True, 'default_company_type': 'company', 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
                                 <kanban>
-                                    <field name="name"/>
+                                    <field name="gstn"/>
+                                    <field name="city"/>
+                                    <field name="zip"/>
 
                                     <templates>
                                         <t t-name="kanban-box">
-                                            <div class="oe_kanban_details">
-                                                    <field name="name"/>
-                                            </div>
+                                            <div t-att-class="'oe_kanban_global_click'">
+                                                <div class="oe_kanban_details">
+                                                    <field name="gstn"/>
+                                                    <div>
+                                                        <field name="city"/>
+                                                        <field name="zip"/>
+                                                    </div>
+                                                    </div>
+                                                </div>
                                         </t>
                                     </templates>
                                 </kanban>
@@ -59,6 +67,7 @@
                                         _fields_view_get() of partner. It would be better to put those fields there but the web client
                                         dosen't support when a field is displayed several times in the same view.-->
                                         <field name="parent_id" invisible="1"/>
+                                        <field name="company_type" invisible="1"/>
                                         <hr/>
                                         <group>
                                             <group>
@@ -69,8 +78,7 @@
                                                 <field name="mobile" widget="phone"/>
                                                 <field name="company_id" invisible="1"/>
                                                 <field name="sap_ref" string="SAP Ref" invisible="1"/>
-                                                <field name="is_company" context="{'default_is_company': True}" attrs="{'invisible' : True}"/>
-                                                <field name="is_customer_branch" context="{'default_is_customer_branch': True}" attrs="{'invisible' : True}"/>
+                                                <field name="is_customer_branch" invisible="1"/>
 
                                             </group>
 

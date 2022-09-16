@@ -84,7 +84,7 @@ class Partner(models.Model):
         response = requests.request("GET", url, headers=headers, data=payload)
         return response.json()
 
-    @api.onchange('vat','gstn')
+    @api.onchange('gstn')
     def do_stuff(self):
         try:
             gst = self.vat or self.gstn

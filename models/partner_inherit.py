@@ -1,18 +1,61 @@
 # -*- coding: utf-8 -*-
+import traceback
 
 from odoo import models, fields, api
 from random import randint
 import logging
+import json
+import requests
 from odoo import api, fields, models, _
+
+from odoo.modules import get_module_resource
 
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
 
+class GstVerification(models.Model):
+    _name = 'gst.verification'
+
+    @staticmethod
+    def get_master_india_access_token():
+        url = "https://pro.mastersindia.co/oauth/access_token"
+        access_data_file_path = get_module_resource('youngman', 'static/config.json')
+        config = open(access_data_file_path, 'r')
+        config = config.read()
+        access_data = json.loads(config)
+        payload = json.dumps({
+            "username": access_data["username"],
+            "password": access_data["password"],
+            "client_id": access_data["client_id"],
+            "client_secret": access_data["client_secret"],
+            "grant_type": "password"
+        })
+        headers = {
+            'Content-Type': 'application/json',
+        }
+        response = requests.request("POST", url, headers=headers, data=payload)
+        return response.json()['access_token'], access_data["client_id"]
+
+    @staticmethod
+    def validate_gstn_from_master_india(gstin_num):
+        url = "https://commonapi.mastersindia.co/commonapis/searchgstin?gstin=%s" % (gstin_num)
+        _logger.info("Master india api url is %s" % (url))
+        acesstoken, clientid = GstVerification.get_master_india_access_token()
+        payload = ""
+        headers = {
+            'client_id': clientid,
+            'Content-type': 'application/json',
+            'Authorization': 'Bearer %s' % acesstoken
+        }
+        response = requests.request("GET", url, headers=headers, data=payload)
+        return response.json()
+
+
 class PartnerInherit(models.Model):
     _name = 'res.partner'
-    _inherit = 'res.partner'
+    _inherit = ['res.partner', 'gst.verification']
 
     @api.model
     def _get_default_country(self):
@@ -50,7 +93,8 @@ class PartnerInherit(models.Model):
     security_cheque = fields.Boolean(default=True, string="Security Cheque")
     user_recievable_id = fields.Integer()
 
-    country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country, ondelete='restrict')
+    country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country,
+                                 ondelete='restrict')
 
     # Mailing Address
     mailing_street = fields.Char(string="Mailing Address")
@@ -58,7 +102,8 @@ class PartnerInherit(models.Model):
     mailing_city = fields.Char()
     mailing_state_id = fields.Many2one("res.country.state", string='Mailing State', ondelete='restrict',
                                        domain="[('country_id', '=', mailing_country_id)]")
-    mailing_country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country, ondelete='restrict')
+    mailing_country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country,
+                                         ondelete='restrict')
     mailing_zip = fields.Char(string='Mailing Pincode', change_default=True)
 
     child_ids = fields.One2many('res.partner', 'parent_id', string='Contact',
@@ -111,9 +156,11 @@ class PartnerInherit(models.Model):
         linked_contacts = self.child_ids
         _logger.error("called _onchange_user_id")
         for contact in linked_contacts:
-            _logger.error(
-                "updating res_partner user id = " + str(new_user_id.id) + " for user " + str(contact._origin.id))
-            self._cr.execute('update res_partner set user_id = %s where id = %s', (new_user_id.id, contact._origin.id))
+            if contact.type != 'invoice':
+                _logger.error(
+                    "updating res_partner user id = " + str(new_user_id.id) + " for user " + str(contact._origin.id))
+                self._cr.execute('update res_partner set user_id = %s where id = %s',
+                                 (new_user_id.id, contact._origin.id))
 
     @api.onchange('team_id')
     def _onchange_salesteam(self):
@@ -121,9 +168,11 @@ class PartnerInherit(models.Model):
         linked_contacts = self.child_ids
         _logger.error("called _onchange_team_id")
         for contact in linked_contacts:
-            _logger.error(
-                "updating res_partner team id = " + str(new_team_id.id) + " for user " + str(contact._origin.id))
-            self._cr.execute('update res_partner set team_id = %s where id = %s', (new_team_id.id, contact._origin.id))
+            if contact.type != 'invoice':
+                _logger.error(
+                    "updating res_partner team id = " + str(new_team_id.id) + " for user " + str(contact._origin.id))
+                self._cr.execute('update res_partner set team_id = %s where id = %s',
+                                 (new_team_id.id, contact._origin.id))
 
     @api.onchange('property_payment_term_id')
     def _onchange_property_payment_term_id(self):
@@ -131,8 +180,9 @@ class PartnerInherit(models.Model):
         linked_contacts = self.child_ids
         _logger.error("called _onchange_property_payment_term_id")
         for contact in linked_contacts:
-            _logger.error("updating " + contact.name)
-            contact.property_payment_term_id = new_payment_term
+            if contact.type != 'invoice':
+                _logger.error("updating " + contact.name)
+                contact.property_payment_term_id = new_payment_term
 
     @api.model
     def view_header_get(self, view_id, view_type):
@@ -147,6 +197,72 @@ class PartnerInherit(models.Model):
                 bd_tag_id=self.env['res.partner.bd.tag'].browse(self.env.context['bd_tag_id']).name,
             )
         return super().view_header_get(view_id, view_type)
+
+    def _add_invoice_addresses(self, parent_id, gstn):
+        gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(gstn)
+        _logger.error(gstn_data)
+        if (gstn_data['error']):
+            error_code = gstn_data["data"]["error"]["error_cd"]
+            error_msg = gstn_data["data"]["error"]["message"]
+            raise Exception(error_code + ": " + error_msg)
+
+        addresses = []
+        addresses.append({
+            'is_company': False,
+            'type': 'invoice',
+            'name': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
+            'parent_id': parent_id,
+            'street': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
+            'street2': gstn_data["data"]["pradr"]["addr"]["st"],
+            'city': gstn_data["data"]["pradr"]["addr"]["city"],
+            'zip': str(gstn_data["data"]["pradr"]["addr"]["pncd"]) if gstn_data["data"]["pradr"]["addr"][
+                                                                          "pncd"] is not None else None
+        })
+        for addr in gstn_data["data"]["adadr"]:
+            addresses.append({
+                'is_company': False,
+                'type': 'invoice',
+                'parent_id': parent_id,
+                'name': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
+                'street': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
+                'street2': addr["addr"]["st"] + ", " + addr["addr"]["loc"] + ", " + addr["addr"]["dst"],
+                'city': addr["addr"]["city"],
+                'zip': str(addr["addr"]["pncd"]) if addr["addr"]["pncd"] is not None else None
+            })
+        _logger.error("Address = " + str(len(addresses)))
+        # todo: delete all address of branch
+        for address in addresses:
+
+            data = super(PartnerInherit, self).create(address)
+            _logger.info("Saved invoice address: " + str(data.id))
+
+    @api.model_create_multi
+    def create(self, vals):
+        _logger.error("Inside create method before super")
+        saved_partner_id = super(PartnerInherit, self).create(vals)
+        _logger.error("Inside create method after super")
+        try:
+            for saved_partner in saved_partner_id:
+                if saved_partner.is_customer_branch:
+                    _logger.error(
+                        "Inside create method " + str(self.is_customer_branch) + " id " + str(saved_partner_id.id))
+                    self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
+        except Exception as e:
+            return {
+                'warning': {'title': 'Warning', 'message': repr(e), },
+            }
+
+        return saved_partner_id
+
+    def write(self, vals):
+        saved_partner_id = super(PartnerInherit, self).write(vals)
+        if type(saved_partner_id) != bool:
+            for saved_partner in saved_partner_id:
+                if saved_partner.is_customer_branch:
+                    _logger.error(
+                        "Inside write method " + str(saved_partner.is_customer_branch) + " id " + str(saved_partner.id))
+                    self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
+        return saved_partner_id
 
     def check_vat(self, cr, uid, ids, context=None):
         user_company = self.pool.get('res.users').browse(cr, uid, uid).company_id
@@ -169,6 +285,7 @@ class PartnerInherit(models.Model):
             if not check_func(cr, uid, vat_country, vat_number, context=context):
                 return False
             return True
+
 
 class ContactTeamUsers(models.Model):
     _description = 'Contact Team Users'
@@ -195,6 +312,8 @@ class PartnerChannelTag(models.Model):
     active = fields.Boolean(default=True, help="The active field allows you to hide the channel without removing it.")
     parent_path = fields.Char(index=True)
     partner_ids = fields.Many2many('res.partner', column1='channel_tag_id', column2='partner_id', string='Partners')
+
+
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
@@ -283,6 +402,7 @@ class PartnerBdTag(models.Model):
             name = name.split(' / ')[-1]
             args = [('name', operator, name)] + args
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
+
 
 class PartnerBillSubmission(models.Model):
     _name = 'res.partner.bill.sub'
