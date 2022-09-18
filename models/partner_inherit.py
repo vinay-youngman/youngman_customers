@@ -236,33 +236,33 @@ class PartnerInherit(models.Model):
             data = super(PartnerInherit, self).create(address)
             _logger.info("Saved invoice address: " + str(data.id))
 
-    @api.model_create_multi
-    def create(self, vals):
-        _logger.error("Inside create method before super")
-        saved_partner_id = super(PartnerInherit, self).create(vals)
-        _logger.error("Inside create method after super")
-        try:
-            for saved_partner in saved_partner_id:
-                if saved_partner.is_customer_branch:
-                    _logger.error(
-                        "Inside create method " + str(self.is_customer_branch) + " id " + str(saved_partner_id.id))
-                    self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
-        except Exception as e:
-            return {
-                'warning': {'title': 'Warning', 'message': repr(e), },
-            }
+    # @api.model_create_multi
+    # def create(self, vals):
+    #     _logger.error("Inside create method before super")
+    #     saved_partner_id = super(PartnerInherit, self).create(vals)
+    #     _logger.error("Inside create method after super")
+    #     try:
+    #         for saved_partner in saved_partner_id:
+    #             if saved_partner.is_customer_branch:
+    #                 _logger.error(
+    #                     "Inside create method " + str(self.is_customer_branch) + " id " + str(saved_partner_id.id))
+    #                 self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
+    #     except Exception as e:
+    #         return {
+    #             'warning': {'title': 'Warning', 'message': repr(e), },
+    #         }
+    #
+    #     return saved_partner_id
 
-        return saved_partner_id
-
-    def write(self, vals):
-        saved_partner_id = super(PartnerInherit, self).write(vals)
-        if type(saved_partner_id) != bool and type(saved_partner_id) != None :
-            for saved_partner in saved_partner_id:
-                if saved_partner.is_customer_branch:
-                    _logger.error(
-                        "Inside write method " + str(saved_partner.is_customer_branch) + " id " + str(saved_partner.id))
-                    self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
-        return saved_partner_id
+    # def write(self, vals):
+    #     saved_partner_id = super(PartnerInherit, self).write(vals)
+    #     if type(saved_partner_id) != bool and type(saved_partner_id) != None :
+    #         for saved_partner in saved_partner_id:
+    #             if saved_partner.is_customer_branch:
+    #                 _logger.error(
+    #                     "Inside write method " + str(saved_partner.is_customer_branch) + " id " + str(saved_partner.id))
+    #                 self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
+    #     return saved_partner_id
 
     def check_vat(self, cr, uid, ids, context=None):
         user_company = self.pool.get('res.users').browse(cr, uid, uid).company_id
