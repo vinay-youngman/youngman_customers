@@ -256,7 +256,7 @@ class PartnerInherit(models.Model):
 
     def write(self, vals):
         saved_partner_id = super(PartnerInherit, self).write(vals)
-        if type(saved_partner_id) != bool:
+        if type(saved_partner_id) != bool and type(saved_partner_id) != None :
             for saved_partner in saved_partner_id:
                 if saved_partner.is_customer_branch:
                     _logger.error(
