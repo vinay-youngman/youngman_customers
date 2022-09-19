@@ -34,8 +34,8 @@
 <!--                    <field name="account_receivable_team" domain="[('name', 'in', ['RECEIVABLE'])]" options="{'no_create': True}"/>-->
 <!--                    <field name="bde_team" domain="[('name', 'in', ['BDE'])]" options="{'no_create': True}"/>-->
 
-<!--                    <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>-->
-<!--                    <field name="bde" string="BDE" options="{'no_create': True}"/>-->
+                    <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>
+                    <field name="bde" string="BDE" options="{'no_create': True}"/>
 
                 </xpath>
             </field>
@@ -81,8 +81,8 @@
                                             <group>
                                                 <field name="name" string="Branch Name" attrs="{'required' : True}"/>
                                                 <field name="gstn" string="GSTN" attrs="{'required' : True}" />
-<!--                                                <field name="account_manager" string="Account Manager" options="{'no_create': True}"/>-->
-<!--                                                <field name="branch_contact_name" string="Contact Name"/>-->
+                                                <field name="account_manager" string="Account Manager" options="{'no_create': True}"/>
+                                                <field name="branch_contact_name" string="Contact Name"/>
                                                 <field name="email" widget="email"/>
                                                 <field name="phone" widget="phone"/>
                                                 <field name="mobile" widget="phone"/>
