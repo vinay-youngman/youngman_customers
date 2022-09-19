@@ -29,7 +29,14 @@
                 <xpath expr="//group[@name='sale']">
                     <field name="credit_limit" string="Credit Limit"/>
                     <field name="credit_rating" string="Credit Rating"/>
-                    <field name="user_recievable_id" string="User Recievable"/>
+
+<!--                    <field name="account_manager_team" domain="[('name', 'in', ['MANAGER'])]" options="{'no_create': True}"/>-->
+<!--                    <field name="account_receivable_team" domain="[('name', 'in', ['RECEIVABLE'])]" options="{'no_create': True}"/>-->
+<!--                    <field name="bde_team" domain="[('name', 'in', ['BDE'])]" options="{'no_create': True}"/>-->
+
+                    <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>
+                    <field name="bde" string="BDE" options="{'no_create': True}"/>
+
                 </xpath>
             </field>
         </record>
@@ -43,6 +50,7 @@
                     <page string="Branches" name="branches" autofocus="autofocus">
                             <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_is_customer_branch': True, 'default_company_type': 'company', 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
                                 <kanban>
+
                                     <field name="gstn"/>
                                     <field name="city"/>
                                     <field name="zip"/>
@@ -73,6 +81,8 @@
                                             <group>
                                                 <field name="name" string="Branch Name" attrs="{'required' : True}"/>
                                                 <field name="gstn" string="GSTN" attrs="{'required' : True}" />
+                                                <field name="account_manager" string="Account Manager" options="{'no_create': True}"/>
+                                                <field name="branch_contact_name" string="Contact Name"/>
                                                 <field name="email" widget="email"/>
                                                 <field name="phone" widget="phone"/>
                                                 <field name="mobile" widget="phone"/>

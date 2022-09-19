@@ -75,6 +75,30 @@ class PartnerInherit(models.Model):
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
 
+
+    # def _get_domain_acc_manager(self):
+    #     if self.account_manager_team:
+    #         domain_acc_manager = [('id', 'in', self.account_manager_team.member_ids.ids)]
+    #         return {'domain': {'account_manager': domain_acc_manager}}
+    #
+    # def _get_domain_acc_receivable(self):
+    #     if self.account_receivable_team:
+    #         domain_acc_receivable = [('id', 'in', self.account_receivable_team.member_ids.ids)]
+    #         return {'domain': {'account_receivable': domain_acc_receivable}}
+    #
+    # def _get_domain_bde(self):
+    #     if self.bde_team:
+    #         domain_bde = [('id', 'in', self.bde_team.member_ids.ids)]
+    #         return {'domain': {'bde': domain_bde}}
+    #
+    # account_manager_team = fields.Many2one(comodel_name='crm.team', string='Account Manager')
+    # account_receivable_team = fields.Many2one(comodel_name='crm.team', string='Account Receivable')
+    # bde_team = fields.Many2one(comodel_name='crm.team', string='BDE')
+
+    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager')
+    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable')
+    bde = fields.Many2one(comodel_name='res.users', string='BDE')
+
     credit_rating = fields.Selection([
         ('0', 'A'),
         ('1', 'B'),
@@ -91,7 +115,7 @@ class PartnerInherit(models.Model):
     rental_advance = fields.Boolean(default=True, string="Rental Advance")
     rental_order = fields.Boolean(default=True, string="Rental Order")
     security_cheque = fields.Boolean(default=True, string="Security Cheque")
-    user_recievable_id = fields.Integer()
+    branch_contact_name = fields.Char(string="Contact Name")
 
     country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country,
                                  ondelete='restrict')
