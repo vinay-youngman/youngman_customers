@@ -10,5 +10,18 @@
               </field>
           </field>
       </record>
+      <record id="crm_lead_view_form" model="ir.ui.view">
+        <field name="name">crm.lead.form</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='%(crm.crm_lead_lost_action)d']" position="replace">
+                <button name="%(crm.crm_lead_lost_action)d" string="Lost" data-hotkey="l" title="Mark as lost"
+                            type="action" context="{'default_lead_id': active_id}" attrs="{'invisible': ['&amp;',('active', '=', False),('probability', '&lt;', 100)]}"/>
+            </xpath>
+            <xpath expr="//button[@name='action_set_lost']" position="replace"></xpath>
+        </field>
+    </record>
+
   </data>
 </odoo>
