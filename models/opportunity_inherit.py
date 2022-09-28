@@ -11,9 +11,5 @@ class CrmLead(models.Model):
     _inherit = 'crm.lead'
 
     job_order = fields.Char(string="Job Order")
-
-
-
-
     lead_qual = fields.Char(string="LQ Name")
     lead_qual_num = fields.Char(string="LQ Number")
