@@ -15,6 +15,13 @@ from odoo.exceptions import ValidationError
 _logger = logging.getLogger(__name__)
 
 
+class PartnerBillSubmission(models.Model):
+    _name = 'res.partner.bill.sub'
+    _description = 'Bill Submission'
+
+    name = fields.Char(string='Bill Submission', required=True)
+
+
 class GstVerification(models.Model):
     _name = 'gst.verification'
 
@@ -439,8 +446,3 @@ class PartnerBdTag(models.Model):
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
 
 
-class PartnerBillSubmission(models.Model):
-    _name = 'res.partner.bill.sub'
-    _description = 'Bill Submission'
-
-    name = fields.Char(string='Bill Submission', required=True)
