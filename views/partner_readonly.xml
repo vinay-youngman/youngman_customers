@@ -18,10 +18,10 @@
                     <field name="sap_ref" string="SAP Ref" invisible="1"/>
                     <field name="is_customer_branch" invisible="1"/>
                 </field>
-                <field name="category_id" position="after">
-                    <field name="channel_tag_ids" widget="many2many_tags" placeholder="Channel Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>
-                    <field name="bd_tag_ids" widget="many2many_tags" placeholder="BD Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>
-                </field>
+<!--                <field name="category_id" position="after">-->
+<!--                    <field name="channel_tag_ids" widget="many2many_tags" placeholder="Channel Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>-->
+<!--                    <field name="bd_tag_ids" widget="many2many_tags" placeholder="BD Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>-->
+<!--                </field>-->
 
 <!--                <xpath expr="//notebook[@colspan='4']"  attrs="{'invisible': [('is_company', '=', False)]}" >-->
 <!--                </xpath>-->
@@ -73,7 +73,7 @@
                                     <sheet>
                                         <!-- parent_id and type fields needed in attrs in base_address_city module which overwrites
                                         _fields_view_get() of partner. It would be better to put those fields there but the web client
-                                        dosen't support when a field is displayed several times in the same view.-->
+                                        doesn't support when a field is displayed several times in the same view.-->
                                         <field name="parent_id" invisible="1"/>
                                         <field name="company_type" invisible="1"/>
                                         <hr/>

@@ -263,19 +263,18 @@ class PartnerInherit(models.Model):
         _logger.error("Address = " + str(len(addresses)))
         # todo: delete all address of branch
         for address in addresses:
-
             data = super(PartnerInherit, self).create(address)
             _logger.info("Saved invoice address: " + str(data.id))
 
-    @api.model_create_multi
-    def create(self, vals):
-        _logger.error("Inside create method before super")
-        if len(vals[0]['branch_ids']) is 0:
-            raise ValidationError(_("Please Create One Branch"))
-        else:
-            saved_partner_id = super(PartnerInherit, self).create(vals)
-            _logger.error("Inside create method after super")
-            return saved_partner_id
+    # @api.model_create_multi
+    # def create(self, vals):
+    #     _logger.error("Inside create method before super")
+    #     if len(vals[0]['branch_ids']) is 0:
+    #         raise ValidationError(_("Please Create One Branch"))
+    #     else:
+    #         saved_partner_id = super(PartnerInherit, self).create(vals)
+    #         _logger.error("Inside create method after super")
+    #         return saved_partner_id
 
 
     # @api.model_create_multi
