@@ -102,9 +102,20 @@ class PartnerInherit(models.Model):
     # account_receivable_team = fields.Many2one(comodel_name='crm.team', string='Account Receivable')
     # bde_team = fields.Many2one(comodel_name='crm.team', string='BDE')
 
-    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager')
-    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable')
-    bde = fields.Many2one(comodel_name='res.users', string='BDE')
+    def return_account_manager_domain(self):
+        return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
+
+    def return_account_receivable_domain(self):
+        return [('id', 'in', self.env.ref('youngman_customers.account_receivable').users.ids)]
+
+    def return_bde_domain(self):
+        return [('id', 'in', self.env.ref('youngman_customers.bde').users.ids)]
+
+    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
+                                      domain=lambda self: self.return_account_manager_domain())
+    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable',
+                                         domain=lambda self: self.return_account_receivable_domain())
+    bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain())
 
     credit_rating = fields.Selection([
         ('0', 'A'),
@@ -266,15 +277,20 @@ class PartnerInherit(models.Model):
             data = super(PartnerInherit, self).create(address)
             _logger.info("Saved invoice address: " + str(data.id))
 
-    # @api.model_create_multi
-    # def create(self, vals):
-    #     _logger.error("Inside create method before super")
-    #     if len(vals[0]['branch_ids']) is 0:
-    #         raise ValidationError(_("Please Create One Branch"))
-    #     else:
-    #         saved_partner_id = super(PartnerInherit, self).create(vals)
-    #         _logger.error("Inside create method after super")
-    #         return saved_partner_id
+    @api.model_create_multi
+    def create(self, vals):
+        _logger.error("Inside create method before super")
+        if len(vals[0]['branch_ids']) is 0:
+            # self.branch_ids.name = vals[0]['branch_ids'][0][2]['gstn']
+            # self.branch_ids.gstn = vals[0]['branch_ids'][0][2]['gstn']
+            vals[0]['branch_ids'][0][2]['name'] = vals[0]['vat']
+            vals[0]['branch_ids'][0][2]['gstn'] = vals[0]['vat']
+            saved_partner_id = super(PartnerInherit, self).create(vals)
+            return saved_partner_id
+        else:
+            saved_partner_id = super(PartnerInherit, self).create(vals)
+            _logger.error("Inside create method after super")
+            return saved_partner_id
 
 
     # @api.model_create_multi
@@ -336,7 +352,6 @@ class ContactTeamUsers(models.Model):
     user_id = fields.Integer(string="User Id")
     contact_id = fields.Many2one('res.partner', string="Contact")
 
-
 class PartnerChannelTag(models.Model):
     _description = 'Partner Channel'
     _name = 'res.partner.channel.tag'
@@ -390,7 +405,6 @@ class PartnerChannelTag(models.Model):
             name = name.split(' / ')[-1]
             args = [('name', operator, name)] + args
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
-
 
 class PartnerBdTag(models.Model):
     _description = 'Partner Channel'

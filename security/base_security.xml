@@ -15,10 +15,27 @@
 
     <record id="group_partner_manager" model="res.groups">
       <field name="name">Manager</field>
-      <field name="implied_ids" eval="[(4, ref('youngman_customers.group_user'))]"/>
+      <field name="implied_ids" eval="[(4, ref('youngman.group_user'))]"/>
       <field name="category_id" ref="youngman_customers.module_management"/>
     </record>
 
+     <record id="account_manager" model="res.groups">
+            <field name="name">Account Manager</field>
+            <field name="category_id" ref="youngman_customers.module_management"/>
+            <field name="implied_ids" eval="[(4, ref('youngman_customers.group_user'))]"/>
+     </record>
+
+     <record id="account_receivable" model="res.groups">
+            <field name="name">Account Receivable</field>
+            <field name="category_id" ref="youngman_customers.module_management"/>
+            <field name="implied_ids" eval="[(4, ref('youngman_customers.group_user'))]"/>
+     </record>
+
+     <record id="bde" model="res.groups">
+            <field name="name">BDE</field>
+            <field name="category_id" ref="youngman_customers.module_management"/>
+            <field name="implied_ids" eval="[(4, ref('youngman_customers.group_user'))]"/>
+     </record>
 
     <!--<menuitem id="main_access_rights_menu" name="Access rights demo"/>
     <menuitem id="access_rights_menu" name="Rights demo" parent="main_access_rights_menu"/>
