@@ -15,7 +15,7 @@
 
     <record id="group_partner_manager" model="res.groups">
       <field name="name">Manager</field>
-      <field name="implied_ids" eval="[(4, ref('youngman.group_user'))]"/>
+      <field name="implied_ids" eval="[(4, ref('youngman_customers.group_user'))]"/>
       <field name="category_id" ref="youngman_customers.module_management"/>
     </record>
 
