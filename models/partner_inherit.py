@@ -75,13 +75,62 @@ class PartnerInherit(models.Model):
     def _default_bd_tag(self):
         return self.env['res.partner.bd.tag'].browse(self._context.get('bd_tag_id'))
 
+    def _add_invoice_addresses(self, branch):
+        gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(branch.gstn)
+        _logger.error(gstn_data)
+        if (gstn_data['error']):
+            error_code = gstn_data["data"]["error"]["error_cd"]
+            error_msg = gstn_data["data"]["error"]["message"]
+            raise Exception(error_code + ": " + error_msg)
+
+        addresses = []
+        addresses.append({
+            'is_company': False,
+            'type': 'invoice',
+            'name': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
+            'parent_id': branch.id,
+            'street': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
+            'street2': gstn_data["data"]["pradr"]["addr"]["st"],
+            'city': gstn_data["data"]["pradr"]["addr"]["city"],
+            'zip': str(gstn_data["data"]["pradr"]["addr"]["pncd"]) if gstn_data["data"]["pradr"]["addr"][
+                                                                          "pncd"] is not None else None
+        })
+        for addr in gstn_data["data"]["adadr"]:
+            addresses.append({
+                'is_company': False,
+                'type': 'invoice',
+                'parent_id': branch.id,
+                'name': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
+                'street': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
+                'street2': addr["addr"]["st"] + ", " + addr["addr"]["loc"] + ", " + addr["addr"]["dst"],
+                'city': addr["addr"]["city"],
+                'zip': str(addr["addr"]["pncd"]) if addr["addr"]["pncd"] is not None else None
+            })
+        _logger.error("Address = " + str(len(addresses)))
+        for address in addresses:
+            existing_address = self.env['res.partner'].search(
+                [('is_company', '=', False),
+                 ('type', '=', 'invoice'),
+                 ('parent_id', '=', branch.id),
+                 ('name', '=', address['name']),
+                 ('street', '=', address['street']),
+                 ('street2', '=', address['street2']),
+                 ('city', '=', address['city']),
+                 ('zip', '=', address['zip'])], limit=1)
+
+            if len(existing_address) == 0:
+                data = super(PartnerInherit, self).create([address])
+                _logger.info("Saved invoice address: " + str(data.id))
+            else:
+                _logger.info("Invoice address already exists")
+
+    def add_invoice_address(self):
+        self._add_invoice_addresses(self)
+
     in_beta = fields.Boolean(default=False, string="In Beta")
-
     is_customer_branch = fields.Boolean(default=False, string="Is Branch")
-
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
-
 
     # def _get_domain_acc_manager(self):
     #     if self.account_manager_team:
@@ -103,13 +152,13 @@ class PartnerInherit(models.Model):
     # bde_team = fields.Many2one(comodel_name='crm.team', string='BDE')
 
     def return_account_manager_domain(self):
-        return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
+        return [('id', 'in', self.env.ref('youngman.account_manager').users.ids)]
 
     def return_account_receivable_domain(self):
-        return [('id', 'in', self.env.ref('youngman_customers.account_receivable').users.ids)]
+        return [('id', 'in', self.env.ref('youngman.account_receivable').users.ids)]
 
     def return_bde_domain(self):
-        return [('id', 'in', self.env.ref('youngman_customers.bde').users.ids)]
+        return [('id', 'in', self.env.ref('youngman.bde').users.ids)]
 
     account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
                                       domain=lambda self: self.return_account_manager_domain())
@@ -240,76 +289,75 @@ class PartnerInherit(models.Model):
             )
         return super().view_header_get(view_id, view_type)
 
-    def _add_invoice_addresses(self, parent_id, gstn):
-        gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(gstn)
-        _logger.error(gstn_data)
-        if (gstn_data['error']):
-            error_code = gstn_data["data"]["error"]["error_cd"]
-            error_msg = gstn_data["data"]["error"]["message"]
-            raise Exception(error_code + ": " + error_msg)
 
-        addresses = []
-        addresses.append({
-            'is_company': False,
-            'type': 'invoice',
-            'name': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
-            'parent_id': parent_id,
-            'street': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
-            'street2': gstn_data["data"]["pradr"]["addr"]["st"],
-            'city': gstn_data["data"]["pradr"]["addr"]["city"],
-            'zip': str(gstn_data["data"]["pradr"]["addr"]["pncd"]) if gstn_data["data"]["pradr"]["addr"][
-                                                                          "pncd"] is not None else None
-        })
-        for addr in gstn_data["data"]["adadr"]:
-            addresses.append({
-                'is_company': False,
-                'type': 'invoice',
-                'parent_id': parent_id,
-                'name': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
-                'street': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
-                'street2': addr["addr"]["st"] + ", " + addr["addr"]["loc"] + ", " + addr["addr"]["dst"],
-                'city': addr["addr"]["city"],
-                'zip': str(addr["addr"]["pncd"]) if addr["addr"]["pncd"] is not None else None
-            })
-        _logger.error("Address = " + str(len(addresses)))
-        # todo: delete all address of branch
-        for address in addresses:
-            data = super(PartnerInherit, self).create(address)
-            _logger.info("Saved invoice address: " + str(data.id))
+
+    def _get_partner_details(self, saved_partner_id, gstn):
+        return {
+            "is_company": True,
+            "active": True,
+            "company_type": "company",
+            "name": gstn,
+            "parent_id": saved_partner_id.id,
+            "company_name": gstn,
+            "gstn": gstn,
+            "type": "contact",
+            "street": saved_partner_id.street,
+            "street2": saved_partner_id.street2,
+            "city": saved_partner_id.city,
+            "state_id": saved_partner_id.state_id.id,
+            "zip": saved_partner_id.zip,
+            "country_id": saved_partner_id.country_id.id,
+            "vat": saved_partner_id.vat,
+            "bill_submission": saved_partner_id.bill_submission.id,
+            "is_customer_branch": True,
+            "function": False,
+            "phone": saved_partner_id.phone,
+            "mobile": saved_partner_id.mobile,
+            "email": saved_partner_id.email,
+            "property_payment_term_id": False,
+            "account_receivable": False,
+            "bde": False,
+            "property_supplier_payment_term_id": False,
+            "property_account_position_id": False,
+            "property_account_receivable_id": 7,
+            "property_account_payable_id": 26,
+            "branch_ids": []
+        }
+
+    def _get_gstn(self, val):
+        if 'gstn' in val:
+            return val['gstn']
+
+        if 'vat' not in val:
+            return False
+
+        if val['vat'] and len(val['vat']) == 15:
+            return val['vat']
+
+        if val['vat'] and len(val['vat']) == 10:
+            return False
+
+        raise Exception("Vat is not valid")
 
     @api.model_create_multi
     def create(self, vals):
-        _logger.error("Inside create method before super")
-        if len(vals[0]['branch_ids']) is 0:
-            # self.branch_ids.name = vals[0]['branch_ids'][0][2]['gstn']
-            # self.branch_ids.gstn = vals[0]['branch_ids'][0][2]['gstn']
-            vals[0]['branch_ids'][0][2]['name'] = vals[0]['vat']
-            vals[0]['branch_ids'][0][2]['gstn'] = vals[0]['vat']
-            saved_partner_id = super(PartnerInherit, self).create(vals)
-            return saved_partner_id
-        else:
-            saved_partner_id = super(PartnerInherit, self).create(vals)
-            _logger.error("Inside create method after super")
-            return saved_partner_id
+        _logger.info("evt=CreatePartner msg=Inside create method before super")
 
+        for val in vals:
+            gstn = self._get_gstn(val)
+            val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
 
-    # @api.model_create_multi
-    # def create(self, vals):
-    #     _logger.error("Inside create method before super")
-    #     saved_partner_id = super(PartnerInherit, self).create(vals)
-    #     _logger.error("Inside create method after super")
-    #     try:
-    #         for saved_partner in saved_partner_id:
-    #             if saved_partner.is_customer_branch:
-    #                 _logger.error(
-    #                     "Inside create method " + str(self.is_customer_branch) + " id " + str(saved_partner_id.id))
-    #                 self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
-    #     except Exception as e:
-    #         return {
-    #             'warning': {'title': 'Warning', 'message': repr(e), },
-    #         }
-    #
-    #     return saved_partner_id
+            if len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
+                saved_partner_id = super(PartnerInherit, self).create([val])
+                _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
+                self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
+                return saved_partner_id
+            else:
+                saved_partner_id = super(PartnerInherit, self).create([val])
+                if saved_partner_id.is_customer_branch ==True:
+                    self._add_invoice_addresses(saved_partner_id)
+                _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
+                return saved_partner_id
 
     # def write(self, vals):
     #     saved_partner_id = super(PartnerInherit, self).write(vals)
@@ -352,6 +400,7 @@ class ContactTeamUsers(models.Model):
     user_id = fields.Integer(string="User Id")
     contact_id = fields.Many2one('res.partner', string="Contact")
 
+
 class PartnerChannelTag(models.Model):
     _description = 'Partner Channel'
     _name = 'res.partner.channel.tag'
@@ -368,8 +417,6 @@ class PartnerChannelTag(models.Model):
     active = fields.Boolean(default=True, help="The active field allows you to hide the channel without removing it.")
     parent_path = fields.Char(index=True)
     partner_ids = fields.Many2many('res.partner', column1='channel_tag_id', column2='partner_id', string='Partners')
-
-
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
@@ -405,6 +452,7 @@ class PartnerChannelTag(models.Model):
             name = name.split(' / ')[-1]
             args = [('name', operator, name)] + args
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
+
 
 class PartnerBdTag(models.Model):
     _description = 'Partner Channel'
@@ -457,5 +505,3 @@ class PartnerBdTag(models.Model):
             name = name.split(' / ')[-1]
             args = [('name', operator, name)] + args
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
-
-
