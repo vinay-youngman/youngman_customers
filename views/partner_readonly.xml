@@ -5,11 +5,12 @@
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
+
+
                 <field name="vat" position="after">
                     <field name="in_beta" readonly="1"/>
 
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
-                    <field name="bill_submission" string="Bill Submission" attrs="{'no_create_edit': True, 'no_create': True, 'create_edit':False, 'create':False, 'invisible': [('is_company', '=', False)]}"/>
 <!--                    <field name="security_letter" string="Security Letter"/>-->
                     <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
@@ -27,6 +28,12 @@
 
 <!--                <xpath expr="//notebook[@colspan='4']"  attrs="{'invisible': [('is_company', '=', False)]}" >-->
 <!--                </xpath>-->
+            <!--   <xpath expr="//form/sheet/group/group/field[@name='mobile']" position="replace">
+                    <field name="mobile" attrs="{'required': True}" widget="phone"/>
+                </xpath>-->
+                <!-- <xpath expr="//form/sheet/group/group/field[@name='email']" position="replace">
+                    <field name="email" attrs="{'required': [('is_company','=', False)]}" context="{'gravatar_image': True}" widget="email"/>
+                </xpath>-->
 
                 <xpath expr="//group[@name='sale']">
                     <field name="credit_limit" string="Credit Limit"/>

@@ -15,12 +15,6 @@ from odoo.exceptions import ValidationError
 _logger = logging.getLogger(__name__)
 
 
-class PartnerBillSubmission(models.Model):
-    _name = 'res.partner.bill.sub'
-    _description = 'Bill Submission'
-
-    name = fields.Char(string='Bill Submission', required=True)
-
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
@@ -152,13 +146,13 @@ class PartnerInherit(models.Model):
     # bde_team = fields.Many2one(comodel_name='crm.team', string='BDE')
 
     def return_account_manager_domain(self):
-        return [('id', 'in', self.env.ref('youngman.account_manager').users.ids)]
+        return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
 
     def return_account_receivable_domain(self):
-        return [('id', 'in', self.env.ref('youngman.account_receivable').users.ids)]
+        return [('id', 'in', self.env.ref('youngman_customers.account_receivable').users.ids)]
 
     def return_bde_domain(self):
-        return [('id', 'in', self.env.ref('youngman.bde').users.ids)]
+        return [('id', 'in', self.env.ref('youngman_customers.bde').users.ids)]
 
     account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
                                       domain=lambda self: self.return_account_manager_domain())
@@ -178,7 +172,6 @@ class PartnerInherit(models.Model):
         ('2', 'UNBLOCKED'),
     ], string='CPL Status')
 
-    bill_submission = fields.Many2one('res.partner.bill.sub', string='Bill Submission', required=True)
     rental_advance = fields.Boolean(default=True, string="Rental Advance")
     rental_order = fields.Boolean(default=True, string="Rental Order")
     security_cheque = fields.Boolean(default=True, string="Security Cheque")
@@ -308,7 +301,6 @@ class PartnerInherit(models.Model):
             "zip": saved_partner_id.zip,
             "country_id": saved_partner_id.country_id.id,
             "vat": saved_partner_id.vat,
-            "bill_submission": saved_partner_id.bill_submission.id,
             "is_customer_branch": True,
             "function": False,
             "phone": saved_partner_id.phone,
@@ -339,35 +331,26 @@ class PartnerInherit(models.Model):
 
         raise Exception("Vat is not valid")
 
-    @api.model_create_multi
-    def create(self, vals):
-        _logger.info("evt=CreatePartner msg=Inside create method before super")
+    # @api.model_create_multi
+    # def create(self, vals):
+    #     _logger.info("evt=CreatePartner msg=Inside create method before super")
+    #
+    #     for val in vals:
+    #         gstn = self._get_gstn(val)
+    #         val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
+    #
+    #         if len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
+    #             saved_partner_id = super(PartnerInherit, self).create([val])
+    #             _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
+    #             self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
+    #             return saved_partner_id
+    #         else:
+    #             saved_partner_id = super(PartnerInherit, self).create([val])
+    #             if saved_partner_id.is_customer_branch ==True:
+    #                 self._add_invoice_addresses(saved_partner_id)
+    #             _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
+    #             return saved_partner_id
 
-        for val in vals:
-            gstn = self._get_gstn(val)
-            val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
-
-            if len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
-                saved_partner_id = super(PartnerInherit, self).create([val])
-                _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
-                self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
-                return saved_partner_id
-            else:
-                saved_partner_id = super(PartnerInherit, self).create([val])
-                if saved_partner_id.is_customer_branch ==True:
-                    self._add_invoice_addresses(saved_partner_id)
-                _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
-                return saved_partner_id
-
-    # def write(self, vals):
-    #     saved_partner_id = super(PartnerInherit, self).write(vals)
-    #     if type(saved_partner_id) != bool and type(saved_partner_id) != None :
-    #         for saved_partner in saved_partner_id:
-    #             if saved_partner.is_customer_branch:
-    #                 _logger.error(
-    #                     "Inside write method " + str(saved_partner.is_customer_branch) + " id " + str(saved_partner.id))
-    #                 self._add_invoice_addresses(saved_partner.id, saved_partner.gstn)
-    #     return saved_partner_id
 
     def check_vat(self, cr, uid, ids, context=None):
         user_company = self.pool.get('res.users').browse(cr, uid, uid).company_id
