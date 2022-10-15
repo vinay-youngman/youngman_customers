@@ -331,25 +331,25 @@ class PartnerInherit(models.Model):
 
         raise Exception("Vat is not valid")
 
-    # @api.model_create_multi
-    # def create(self, vals):
-    #     _logger.info("evt=CreatePartner msg=Inside create method before super")
-    #
-    #     for val in vals:
-    #         gstn = self._get_gstn(val)
-    #         val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
-    #
-    #         if len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
-    #             saved_partner_id = super(PartnerInherit, self).create([val])
-    #             _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
-    #             self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
-    #             return saved_partner_id
-    #         else:
-    #             saved_partner_id = super(PartnerInherit, self).create([val])
-    #             if saved_partner_id.is_customer_branch ==True:
-    #                 self._add_invoice_addresses(saved_partner_id)
-    #             _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
-    #             return saved_partner_id
+    @api.model_create_multi
+    def create(self, vals):
+        _logger.info("evt=CreatePartner msg=Inside create method before super")
+
+        for val in vals:
+            gstn = self._get_gstn(val)
+            val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
+
+            if len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
+                saved_partner_id = super(PartnerInherit, self).create([val])
+                _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
+                self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
+                return saved_partner_id
+            else:
+                saved_partner_id = super(PartnerInherit, self).create([val])
+                if saved_partner_id.is_customer_branch ==True:
+                    self._add_invoice_addresses(saved_partner_id)
+                _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
+                return saved_partner_id
 
 
     def check_vat(self, cr, uid, ids, context=None):
