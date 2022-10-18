@@ -336,6 +336,10 @@ class PartnerInherit(models.Model):
         _logger.info("evt=CreatePartner msg=Inside create method before super")
 
         for val in vals:
+            if val['is_company'] is False:
+                saved_partner_id = super(PartnerInherit, self).create([val])
+                return saved_partner_id
+
             gstn = self._get_gstn(val)
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
 
