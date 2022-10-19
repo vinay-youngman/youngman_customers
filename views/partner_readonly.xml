@@ -55,6 +55,9 @@
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
+                <xpath expr="//notebook" position="attributes">
+                        <attribute name="attrs">{'invisible' :[('is_company','=',False)]}</attribute>
+                </xpath>
             	<xpath expr="//notebook">
                     <page string="Branches" name="branches" autofocus="autofocus">
                             <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_is_customer_branch': True, 'default_company_type': 'company', 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
