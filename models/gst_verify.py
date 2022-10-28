@@ -23,7 +23,7 @@ class Partner(models.Model):
     def get_master_india_access_token():
         url = "https://pro.mastersindia.co/oauth/access_token"
 
-        access_data_file_path = get_module_resource('youngman', 'static/config.json')
+        access_data_file_path = get_module_resource('youngman_customers', 'static/config.json')
 
         config = open(access_data_file_path, 'r')
 

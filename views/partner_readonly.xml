@@ -5,13 +5,14 @@
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
-
+                <xpath expr="//group/group/field[@name='vat']" position="replace">
+                    <field name="vat" string="PAN" attrs="{'invisible': [('is_customer_branch', '=', True)]}" placeholder="Enter PAN/GST"/>
+                </xpath>
 
                 <field name="vat" position="after">
+                    <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', False)]}" placeholder="Enter GSTN"/>
                     <field name="in_beta" readonly="1"/>
-
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
-<!--                    <field name="security_letter" string="Security Letter"/>-->
                     <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="security_cheque" string="Security Cheque" attrs="{'invisible': [('is_company', '=', False)]}"/>
@@ -21,28 +22,10 @@
 
                     <button name="add_invoice_address" type="object" string="Update Invoice Address" attrs="{'invisible': [('is_customer_branch', '=', False)]}"/>
                 </field>
-<!--                <field name="category_id" position="after">-->
-<!--                    <field name="channel_tag_ids" widget="many2many_tags" placeholder="Channel Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>-->
-<!--                    <field name="bd_tag_ids" widget="many2many_tags" placeholder="BD Tags..." attrs="{'invisible': [('is_company','=', False)]}"/>-->
-<!--                </field>-->
-
-<!--                <xpath expr="//notebook[@colspan='4']"  attrs="{'invisible': [('is_company', '=', False)]}" >-->
-<!--                </xpath>-->
-            <!--   <xpath expr="//form/sheet/group/group/field[@name='mobile']" position="replace">
-                    <field name="mobile" attrs="{'required': True}" widget="phone"/>
-                </xpath>-->
-                <!-- <xpath expr="//form/sheet/group/group/field[@name='email']" position="replace">
-                    <field name="email" attrs="{'required': [('is_company','=', False)]}" context="{'gravatar_image': True}" widget="email"/>
-                </xpath>-->
 
                 <xpath expr="//group[@name='sale']">
                     <field name="credit_limit" string="Credit Limit"/>
                     <field name="credit_rating" string="Credit Rating"/>
-
-<!--                    <field name="account_manager_team" domain="[('name', 'in', ['MANAGER'])]" options="{'no_create': True}"/>-->
-<!--                    <field name="account_receivable_team" domain="[('name', 'in', ['RECEIVABLE'])]" options="{'no_create': True}"/>-->
-<!--                    <field name="bde_team" domain="[('name', 'in', ['BDE'])]" options="{'no_create': True}"/>-->
-
                     <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>
                     <field name="bde" string="BDE" options="{'no_create': True}"/>
 
@@ -92,7 +75,7 @@
                                         <group>
                                             <group>
                                                 <field name="name" string="Branch Name" attrs="{'required' : True}"/>
-                                                <field name="gstn" string="GSTN" attrs="{'required' : True}" />
+                                                <field name="gstn" string="GSTN" attrs="{'required' : True}" placeholder="Enter GSTN"/>
                                                 <field name="account_manager" string="Account Manager" options="{'no_create': True}"/>
                                                 <field name="branch_contact_name" string="Contact Name"/>
                                                 <field name="email" widget="email"/>

@@ -15,14 +15,13 @@ from odoo.exceptions import ValidationError
 _logger = logging.getLogger(__name__)
 
 
-
 class GstVerification(models.Model):
     _name = 'gst.verification'
 
     @staticmethod
     def get_master_india_access_token():
         url = "https://pro.mastersindia.co/oauth/access_token"
-        access_data_file_path = get_module_resource('youngman', 'static/config.json')
+        access_data_file_path = get_module_resource('youngman_customers', 'static/config.json')
         config = open(access_data_file_path, 'r')
         config = config.read()
         access_data = json.loads(config)
@@ -121,29 +120,12 @@ class PartnerInherit(models.Model):
     def add_invoice_address(self):
         self._add_invoice_addresses(self)
 
-    in_beta = fields.Boolean(default=False, string="In Beta")
+    in_beta = fields.Boolean(default=False, string="In Beta", store=True)
     is_customer_branch = fields.Boolean(default=False, string="Is Branch")
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
 
-    # def _get_domain_acc_manager(self):
-    #     if self.account_manager_team:
-    #         domain_acc_manager = [('id', 'in', self.account_manager_team.member_ids.ids)]
-    #         return {'domain': {'account_manager': domain_acc_manager}}
-    #
-    # def _get_domain_acc_receivable(self):
-    #     if self.account_receivable_team:
-    #         domain_acc_receivable = [('id', 'in', self.account_receivable_team.member_ids.ids)]
-    #         return {'domain': {'account_receivable': domain_acc_receivable}}
-    #
-    # def _get_domain_bde(self):
-    #     if self.bde_team:
-    #         domain_bde = [('id', 'in', self.bde_team.member_ids.ids)]
-    #         return {'domain': {'bde': domain_bde}}
-    #
-    # account_manager_team = fields.Many2one(comodel_name='crm.team', string='Account Manager')
-    # account_receivable_team = fields.Many2one(comodel_name='crm.team', string='Account Receivable')
-    # bde_team = fields.Many2one(comodel_name='crm.team', string='BDE')
+
 
     def return_account_manager_domain(self):
         return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
@@ -282,8 +264,6 @@ class PartnerInherit(models.Model):
             )
         return super().view_header_get(view_id, view_type)
 
-
-
     def _get_partner_details(self, saved_partner_id, gstn):
         return {
             "is_company": True,
@@ -317,7 +297,7 @@ class PartnerInherit(models.Model):
         }
 
     def _get_gstn(self, val):
-        if 'gstn' in val:
+        if 'gstn' in val and val['gstn'] is not False:
             return val['gstn']
 
         if 'vat' not in val:
@@ -350,11 +330,10 @@ class PartnerInherit(models.Model):
                 return saved_partner_id
             else:
                 saved_partner_id = super(PartnerInherit, self).create([val])
-                if saved_partner_id.is_customer_branch ==True:
+                if saved_partner_id.is_customer_branch == True:
                     self._add_invoice_addresses(saved_partner_id)
                 _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
                 return saved_partner_id
-
 
     def check_vat(self, cr, uid, ids, context=None):
         user_company = self.pool.get('res.users').browse(cr, uid, uid).company_id
