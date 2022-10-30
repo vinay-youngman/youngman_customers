@@ -32,7 +32,7 @@
                     <field name="credit_limit" string="Credit Limit"/>
                     <field name="credit_rating" string="Credit Rating"/>
                     <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>
-                    <field name="bde" string="BDE" options="{'no_create': True}"/>
+
 
                 </xpath>
             </field>
@@ -84,6 +84,7 @@
                                                 <field name="name" string="Branch Name" attrs="{'required' : True}"/>
                                                 <field name="gstn" string="GSTN" attrs="{'required' : True}" placeholder="Enter GSTN"/>
                                                 <field name="account_manager" string="Account Manager" options="{'no_create': True}"/>
+                                                <field name="bde" string="BDE" options="{'no_create': True}"/>
                                                 <field name="branch_contact_name" string="Contact Name"/>
                                                 <field name="email" widget="email"/>
                                                 <field name="phone" widget="phone"/>
