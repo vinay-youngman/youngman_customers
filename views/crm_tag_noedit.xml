@@ -1,16 +1,17 @@
 <odoo>
   <data>
-      <record  model="ir.ui.view" id="view_partner_form_notag_inherit">
-          <field name="name">res.partner.notag.inherit</field>
-          <field name="model">res.partner</field>
-          <field name="inherit_id" ref="base.view_partner_form"/>
+      <record  model="ir.ui.view" id="crm_lead_no_tag_inherit">
+          <field name="name">crm.lead.tag_noedit.inherit</field>
+          <field name="model">crm.lead</field>
+          <field name="inherit_id" ref="crm.crm_lead_view_form"/>
           <field name="arch" type="xml">
-              <field name="category_id" position="attributes">
+              <field name="tag_ids" position="attributes">
                   <attribute name="options">
                       {'color_field': 'color', 'no_create_edit': True, 'no_create': True, 'create_edit':False, 'create':False}
                   </attribute>
               </field>
           </field>
       </record>
+
   </data>
 </odoo>

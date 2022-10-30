@@ -1,39 +1,28 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "youngman_customers",
-
-    'summary': """
-        Short (1 phrase/line) summary of the module's purpose, used as
-        subtitle on modules listing or apps.openerp.com""",
-
+    'name': "Contacts & Customers",
+    'version': '3.0',
+    'category': 'Sales/CRM',
+    'summary': 'Manages Contacts/Customers & Their Branches',
     'description': """
-        Long description of module's purpose
+        Provides various modifications in Contacts Form.
     """,
-
     'author': "Ajay",
-    'website': "http://www.yourcompany.com",
+    'website': "https://www.youngman.co.in/",
+    'sequence': -100,
 
-    # Categories can be used to filter modules in modules listing
-    # Check https://github.com/odoo/odoo/blob/14.0/odoo/addons/base/data/ir_module_category_data.xml
-    # for the full list
-    'category': 'Uncategorized',
-    'version': '2.2',
+    'depends': ['base','crm', 'base_vat'],
 
-    # any module necessary for this one to work correctly
-    'depends': ['base','crm', 'base_vat', 'jobsites'],
-
-    # always loaded
     'data': [
         'security/base_security.xml',
         'security/ir.model.access.csv',
-        'views/lead_lost_no_tag.xml',
-        'views/crm_no_tag.xml',
-        'views/partner_no_tag.xml',
-        'views/partner_readonly.xml',
+        'views/lead_lost.xml',
+        'views/crm_tag_noedit.xml',
+        'views/contacts_form.xml',
         'views/send_to_beta.xml'
     ],
-    # only loaded in demonstration mode
-    'demo': [
-        'demo/demo.xml',
-    ],
+
+    'application': True,
+    'installable': True,
+    'auto_install': False,
 }

@@ -9,6 +9,12 @@
                     <field name="vat" string="PAN" attrs="{'invisible': [('is_customer_branch', '=', True)]}" placeholder="Enter PAN/GST"/>
                 </xpath>
 
+                <field name="category_id" position="attributes">
+                  <attribute name="options">
+                      {'color_field': 'color', 'no_create_edit': True, 'no_create': True, 'create_edit':False, 'create':False}
+                  </attribute>
+                </field>
+
                 <field name="vat" position="after">
                     <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', False)]}" placeholder="Enter GSTN"/>
                     <field name="in_beta" readonly="1"/>

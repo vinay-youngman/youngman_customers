@@ -316,14 +316,14 @@ class PartnerInherit(models.Model):
         _logger.info("evt=CreatePartner msg=Inside create method before super")
 
         for val in vals:
-            if val['is_company'] is False:
+            if ('is_company' in val and val['is_company'] is False) or ('company_type' in val and val['company_type']=='person'):
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 return saved_partner_id
 
             gstn = self._get_gstn(val)
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
 
-            if len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
+            if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
                 self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
