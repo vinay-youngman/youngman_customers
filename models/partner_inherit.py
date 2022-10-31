@@ -127,20 +127,25 @@ class PartnerInherit(models.Model):
 
 
 
-    def return_account_manager_domain(self):
-        return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
+    # def return_account_manager_domain(self):
+    #     allAM = self.env['res.users'].browse([('sale_team_id', '=', '9')])
+    #     return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
+    #
+    # def return_account_receivable_domain(self):
+    #     return [('id', 'in', self.env.ref('youngman_customers.account_receivable').users.ids)]
+    #
+    # def return_bde_domain(self):
+    #     return [('id', 'in', self.env.ref('youngman_customers.bde').users.ids)]
 
-    def return_account_receivable_domain(self):
-        return [('id', 'in', self.env.ref('youngman_customers.account_receivable').users.ids)]
+    # account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
+    #                                   domain=lambda self: self.return_account_manager_domain())
+    # account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable',
+    #                                      domain=lambda self: self.return_account_receivable_domain())
+    # bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain())
 
-    def return_bde_domain(self):
-        return [('id', 'in', self.env.ref('youngman_customers.bde').users.ids)]
-
-    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
-                                      domain=lambda self: self.return_account_manager_domain())
-    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable',
-                                         domain=lambda self: self.return_account_receivable_domain())
-    bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain())
+    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager', readonly=True, store=True)
+    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', readonly=True, store=True)
+    bde = fields.Many2one(comodel_name='res.users', string='BDE', readonly=True, store=True)
 
     credit_rating = fields.Selection([
         ('0', 'A'),
@@ -264,6 +269,40 @@ class PartnerInherit(models.Model):
             )
         return super().view_header_get(view_id, view_type)
 
+    def getARId(self):
+        self.env.cr.execute("""SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT RECEIVABLE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+        members = self.env.cr.fetchall()
+        count = {}
+        for member_id in members:
+            self.env.cr.execute("""select count(id) from res_partner where account_receivable=%s and active=true AND is_customer_branch=false AND is_company=true""", member_id)
+            member_count = self.env.cr.fetchall()
+            count[member_id] = member_count[0][0]
+        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+
+    def getBDEId(self):
+        self.env.cr.execute(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'BDE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+        members = self.env.cr.fetchall()
+        count = {}
+        for member_id in members:
+            self.env.cr.execute("""select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true""",
+                                member_id)
+            member_count = self.env.cr.fetchall()
+            count[member_id] = member_count[0][0]
+        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+
+    def getAMId(self):
+        self.env.cr.execute(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT MANAGER' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+        members = self.env.cr.fetchall()
+        count = {}
+        for member_id in members:
+            self.env.cr.execute("""select count(id) from res_partner where account_manager=%s and active=true AND is_customer_branch=true""",
+                                member_id)
+            member_count = self.env.cr.fetchall()
+            count[member_id] = member_count[0][0]
+        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+
     def _get_partner_details(self, saved_partner_id, gstn):
         return {
             "is_company": True,
@@ -288,7 +327,8 @@ class PartnerInherit(models.Model):
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
             "account_receivable": False,
-            "bde": False,
+            "account_manager": self.getAMId(),
+            "bde": self.getBDEId(),
             "property_supplier_payment_term_id": False,
             "property_account_position_id": False,
             "property_account_receivable_id": 7,
@@ -311,6 +351,7 @@ class PartnerInherit(models.Model):
 
         raise Exception("Vat is not valid")
 
+
     @api.model_create_multi
     def create(self, vals):
         _logger.info("evt=CreatePartner msg=Inside create method before super")
@@ -324,6 +365,7 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
+                val['account_receivable'] = self.getARId()
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
                 self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
