@@ -125,27 +125,46 @@ class PartnerInherit(models.Model):
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
 
+    def return_account_manager_domain(self):
+        acc_m_team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT MANAGER')]).id
 
+        domain = self.env['crm.team.member'].search([('crm_team_id', '=', acc_m_team_id)]).user_id.ids
 
-    # def return_account_manager_domain(self):
-    #     allAM = self.env['res.users'].browse([('sale_team_id', '=', '9')])
-    #     return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
+        return [('id', 'in', domain)]
+
+    # def return_account_manager_readonly(self):
+    #     uid = self.env.uid
     #
-    # def return_account_receivable_domain(self):
-    #     return [('id', 'in', self.env.ref('youngman_customers.account_receivable').users.ids)]
+    #     team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT MANAGER')]).user_id
     #
-    # def return_bde_domain(self):
-    #     return [('id', 'in', self.env.ref('youngman_customers.bde').users.ids)]
+    #     if uid == team_id:
+    #         return False
+    #     else:
+    #         return True
 
-    # account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
-    #                                   domain=lambda self: self.return_account_manager_domain())
-    # account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable',
-    #                                      domain=lambda self: self.return_account_receivable_domain())
-    # bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain())
 
-    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager', readonly=True, store=True)
-    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', readonly=True, store=True)
-    bde = fields.Many2one(comodel_name='res.users', string='BDE', readonly=True, store=True)
+    def return_account_receivable_domain(self):
+        acc_r_team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT RECEIVABLE')]).id
+
+        domain = self.env['crm.team.member'].search([('crm_team_id', '=', acc_r_team_id)]).user_id.ids
+
+        return [('id', 'in', domain)]
+
+    def return_bde_domain(self):
+        bde_team_id = self.env['crm.team'].search([('name', '=', 'BDE')]).id
+
+        domain = self.env['crm.team.member'].search([('crm_team_id', '=', bde_team_id)]).user_id.ids
+
+        return [('id', 'in', domain)]
+
+    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager',
+                                      domain=lambda self: self.return_account_manager_domain(),
+                                      readonly=True, store=True)
+    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable',
+                                         domain=lambda self: self.return_account_receivable_domain(),
+                                         readonly=True, store=True)
+    bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain(),
+                          readonly=True, store=True)
 
     credit_rating = fields.Selection([
         ('0', 'A'),
