@@ -17,6 +17,7 @@
 
                 <field name="vat" position="after">
                     <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', False)]}" placeholder="Enter GSTN"/>
+
                     <field name="in_beta" readonly="1"/>
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
                     <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
@@ -31,6 +32,7 @@
                 <xpath expr="//group[@name='sale']">
                     <field name="credit_limit" string="Credit Limit"/>
                     <field name="credit_rating" string="Credit Rating"/>
+                    <field name="type" string="Business Type"/>
                     <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>
 
 

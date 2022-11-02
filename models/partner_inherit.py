@@ -53,9 +53,16 @@ class GstVerification(models.Model):
         return response.json()
 
 
+class BusinessType(models.Model):
+    _name = 'business.type'
+    name = fields.Char(string='Business Type')
+
+
 class PartnerInherit(models.Model):
     _name = 'res.partner'
     _inherit = ['res.partner', 'gst.verification']
+
+    type = fields.Many2one(comodel_name='business.type', string='Business Type')
 
     @api.model
     def _get_default_country(self):
@@ -125,8 +132,6 @@ class PartnerInherit(models.Model):
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
 
-
-
     # def return_account_manager_domain(self):
     #     allAM = self.env['res.users'].browse([('sale_team_id', '=', '9')])
     #     return [('id', 'in', self.env.ref('youngman_customers.account_manager').users.ids)]
@@ -144,7 +149,8 @@ class PartnerInherit(models.Model):
     # bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain())
 
     account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager', readonly=True, store=True)
-    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', readonly=True, store=True)
+    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', readonly=True,
+                                         store=True)
     bde = fields.Many2one(comodel_name='res.users', string='BDE', readonly=True, store=True)
 
     credit_rating = fields.Selection([
@@ -270,11 +276,14 @@ class PartnerInherit(models.Model):
         return super().view_header_get(view_id, view_type)
 
     def getARId(self):
-        self.env.cr.execute("""SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT RECEIVABLE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+        self.env.cr.execute(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT RECEIVABLE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
         members = self.env.cr.fetchall()
         count = {}
         for member_id in members:
-            self.env.cr.execute("""select count(id) from res_partner where account_receivable=%s and active=true AND is_customer_branch=false AND is_company=true""", member_id)
+            self.env.cr.execute(
+                """select count(id) from res_partner where account_receivable=%s and active=true AND is_customer_branch=false AND is_company=true""",
+                member_id)
             member_count = self.env.cr.fetchall()
             count[member_id] = member_count[0][0]
         return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
@@ -285,8 +294,9 @@ class PartnerInherit(models.Model):
         members = self.env.cr.fetchall()
         count = {}
         for member_id in members:
-            self.env.cr.execute("""select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true""",
-                                member_id)
+            self.env.cr.execute(
+                """select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true""",
+                member_id)
             member_count = self.env.cr.fetchall()
             count[member_id] = member_count[0][0]
         return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
@@ -297,8 +307,9 @@ class PartnerInherit(models.Model):
         members = self.env.cr.fetchall()
         count = {}
         for member_id in members:
-            self.env.cr.execute("""select count(id) from res_partner where account_manager=%s and active=true AND is_customer_branch=true""",
-                                member_id)
+            self.env.cr.execute(
+                """select count(id) from res_partner where account_manager=%s and active=true AND is_customer_branch=true""",
+                member_id)
             member_count = self.env.cr.fetchall()
             count[member_id] = member_count[0][0]
         return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
@@ -351,13 +362,13 @@ class PartnerInherit(models.Model):
 
         raise Exception("Vat is not valid")
 
-
     @api.model_create_multi
     def create(self, vals):
         _logger.info("evt=CreatePartner msg=Inside create method before super")
 
         for val in vals:
-            if ('is_company' in val and val['is_company'] is False) or ('company_type' in val and val['company_type']=='person'):
+            if ('is_company' in val and val['is_company'] is False) or (
+                    'company_type' in val and val['company_type'] == 'person'):
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 return saved_partner_id
 
