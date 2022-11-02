@@ -29,11 +29,24 @@
 
                     <button name="add_invoice_address" type="object" string="Update Invoice Address" attrs="{'invisible': [('is_customer_branch', '=', False)]}"/>
                 </field>
+                <xpath expr="//group[@name='misc']" position="attributes">
+                        <attribute name="attrs">{'invisible':True}</attribute>
+                </xpath>
+                <xpath expr="//group[@name='fiscal_information']" position="attributes">
+                        <attribute name="attrs">{'invisible':True}</attribute>
+                </xpath>
                 <xpath expr="//group[@name='sale']">
                     <field name="credit_limit" string="Credit Limit"/>
                     <field name="credit_rating" string="Credit Rating"/>
                     <field name="type" string="Business Type"/>
                     <field name="account_receivable" string="Account Receivable" options="{'no_create': True}"/>
+                    <field name="account_receivable" string="Account Receivable" options="{'no_create': True} " attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
+                    <field name="account_manager" string="Account Manager" options="{'no_create': True} " attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', False)]}"/>
+                    <field name="bde" string="BDE" options="{'no_create': True}" attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', False)]}"/>
+<!--                    invisible | is_customer_branch=true, is_company = false-->
+
+<!--                    add bde acc man invisible | is_company = false is_customer_branch = false-->
+
 
 
                 </xpath>
@@ -85,7 +98,7 @@
                                             <group>
                                                 <field name="name" string="Branch Name" attrs="{'required' : True}"/>
                                                 <field name="gstn" string="GSTN" attrs="{'required' : True}" placeholder="Enter GSTN"/>
-                                                <field name="account_manager" string="Account Manager" options="{'no_create': True}"/>
+                                                <field name="account_manager" string="Account Manager" options="{'no_create': True} "/>
                                                 <field name="bde" string="BDE" options="{'no_create': True}"/>
                                                 <field name="branch_contact_name" string="Contact Name"/>
                                                 <field name="email" widget="email"/>
@@ -130,6 +143,29 @@
                             </field>
                     </page>
             	</xpath>
+                <xpath expr="//field[@name='property_payment_term_id']" position="attributes">
+                        <attribute name="attrs">{'required' : True}</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="res_partner_view_search" model="ir.ui.view">
+            <field name="name">res.partner.search.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='group_by']" position="replace">
+                    <group expand="0" name="group_by" string="Group By">
+                        <filter name="salesperson" string="Salesperson" domain="[]" context="{'group_by' : 'user_id'}" />
+                        <filter name="group_company" string="Company" context="{'group_by': 'parent_id'}"/>
+                        <filter name="group_country" string="Country" context="{'group_by': 'country_id'}"/>
+                        <separator/>
+                         <filter string="ACCOUNT MANAGER" name="acma" context="{'group_by': 'account_manager'}"/>
+                        <filter string="ACCOUNT RECEIVABLE" name="acre" context="{'group_by': 'account_receivable'}"/>
+                        <filter string="BDE" name="bde" context="{'group_by': 'bde'}"/>
+                        <separator/>
+                    </group>
+                </xpath>
             </field>
         </record>
 
