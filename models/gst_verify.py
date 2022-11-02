@@ -14,6 +14,10 @@ import os
 
 _logger = logging.getLogger(__name__)
 
+class BusinessType(models.Model):
+    _name = 'business.type'
+    name = fields.Char(string='Business Type')
+
 
 class Partner(models.Model):
     _name = 'res.partner'
@@ -116,6 +120,7 @@ class Partner(models.Model):
                 self.gstn = gst.upper()
 
             gst_data = Partner.validate_gstn_from_master_india(gst)
+            print(gst_data)
             if (gst_data['error']):
                 return {
                     'warning': {'title': 'Warning',
@@ -138,7 +143,15 @@ class Partner(models.Model):
             self.city = gst_data["data"]["pradr"]["addr"]["city"]
             self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"]["pncd"] is not None else None
             #self.country_id = self.get_country("IN")
-
+            company_type = gst_data['data']['ctb']
+            type_id = self.env['business.type'].search([('name', '=', company_type)]).id
+            if(type_id):
+                self.type = type_id
+            else:
+                values = {'name': company_type}
+                self.env['business.type'].create(values)
+                type_id = self.env['business.type'].search([('name', '=', company_type)]).id
+                self.type = type_id
 
         except Exception as e:
             _logger.error(e.with_traceback())
