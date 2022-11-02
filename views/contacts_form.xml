@@ -150,11 +150,17 @@
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_res_partner_filter"/>
             <field name="arch" type="xml">
-                <xpath expr="//filter[@name='inactive']" position="before">
-                   <filter string="ACCOUNT MANAGER" name="acma" domain="[('team_id','=', 'ACCOUNT MANAGER')]"/>
-                    <filter string="ACCOUNT RECEIVABLE" name="acre" domain="[('team_id','=', 'ACCOUNT RECEIVABLE')]"/>
-                   <filter string="BDE" name="bde" domain="[('team_id','=', 'BDE')]"/>
-                   <separator/>
+                <xpath expr="//group[@name='group_by']" position="replace">
+                    <group expand="0" name="group_by" string="Group By">
+                        <filter name="salesperson" string="Salesperson" domain="[]" context="{'group_by' : 'user_id'}" />
+                        <filter name="group_company" string="Company" context="{'group_by': 'parent_id'}"/>
+                        <filter name="group_country" string="Country" context="{'group_by': 'country_id'}"/>
+                        <separator/>
+                         <filter string="ACCOUNT MANAGER" name="acma" context="{'group_by': 'account_manager'}"/>
+                        <filter string="ACCOUNT RECEIVABLE" name="acre" context="{'group_by': 'account_receivable'}"/>
+                        <filter string="BDE" name="bde" context="{'group_by': 'bde'}"/>
+                        <separator/>
+                    </group>
                 </xpath>
             </field>
         </record>
