@@ -17,8 +17,8 @@
 
                 <field name="vat" position="after">
                     <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', False)]}" placeholder="Enter GSTN"/>
-                    <field name="in_beta" readonly="1" force_save="1"/>
-<!--                    <field name="in_beta" force_save="1" attrs="{'invisible': [('is_customer_branch', '=', True), ('is_company', '=', False)], 'readonly':[('in_beta', '=', True)]}"/>-->
+<!--                    <field name="in_beta" readonly="1" force_save="1"/>-->
+                    <field name="in_beta" force_save="1" attrs="{'invisible': [('is_customer_branch', '=', True), ('is_company', '=', False)], 'readonly':[('in_beta', '=', True)]}"/>
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
                     <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
