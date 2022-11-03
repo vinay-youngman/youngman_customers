@@ -35,6 +35,9 @@
                 <xpath expr="//group[@name='fiscal_information']" position="attributes">
                         <attribute name="attrs">{'invisible':True}</attribute>
                 </xpath>
+                <xpath expr="//group[@name='purchase']" position="attributes">
+                        <attribute name="attrs">{'invisible':True}</attribute>
+                </xpath>
                 <xpath expr="//group[@name='sale']">
                     <field name="credit_limit" string="Credit Limit"/>
                     <field name="credit_rating" string="Credit Rating"/>
@@ -143,7 +146,7 @@
                     </page>
             	</xpath>
                 <xpath expr="//field[@name='property_payment_term_id']" position="attributes">
-                        <attribute name="attrs">{'required' : True}</attribute>
+                        <attribute name="attrs">{'required' :[('is_customer_branch', '=', False),('is_company', '=', True)]}</attribute>
                 </xpath>
             </field>
         </record>
