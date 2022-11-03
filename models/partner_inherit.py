@@ -127,7 +127,7 @@ class PartnerInherit(models.Model):
     def add_invoice_address(self):
         self._add_invoice_addresses(self)
 
-    in_beta = fields.Boolean(default=False, string="In Beta", store=True)
+    in_beta = fields.Boolean(default=False, string="Exists In Beta", store=True)
     is_customer_branch = fields.Boolean(default=False, string="Is Branch")
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
