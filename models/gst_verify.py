@@ -14,9 +14,6 @@ import os
 
 _logger = logging.getLogger(__name__)
 
-class BusinessType(models.Model):
-    _name = 'business.type'
-    name = fields.Char(string='Business Type')
 
 
 class Partner(models.Model):
@@ -146,12 +143,12 @@ class Partner(models.Model):
             company_type = gst_data['data']['ctb']
             type_id = self.env['business.type'].search([('name', '=', company_type)]).id
             if(type_id):
-                self.type = type_id
+                self.business_type = type_id
             else:
                 values = {'name': company_type}
                 self.env['business.type'].create(values)
                 type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-                self.type = type_id
+                self.business_type = type_id
 
         except Exception as e:
             _logger.error(e.with_traceback())

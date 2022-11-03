@@ -60,9 +60,9 @@ class BusinessType(models.Model):
 
 class PartnerInherit(models.Model):
     _name = 'res.partner'
-    _inherit = ['res.partner', 'gst.verification']
+    _inherit = ['res.partner', 'gst.verification', 'business.type']
 
-    type = fields.Many2one(comodel_name='business.type', string='Business Type')
+    business_type = fields.Many2one(comodel_name='business.type', string='Business Type')
 
     @api.model
     def _get_default_country(self):
@@ -345,7 +345,7 @@ class PartnerInherit(models.Model):
             "mobile": saved_partner_id.mobile,
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
-            "account_receivable": False,
+            # "account_receivable": saved_partner_id.account_receivable.id,
             "account_manager": self.getAMId(),
             "bde": self.getBDEId(),
             "property_supplier_payment_term_id": False,
