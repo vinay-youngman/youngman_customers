@@ -156,9 +156,9 @@ class PartnerInherit(models.Model):
         domain = self.env['crm.team.member'].search([('crm_team_id', '=', bde_team_id)]).user_id.ids
         return [('id', 'in', domain)]
 
-    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager', domain=lambda self: self.return_account_manager_domain(), readonly=True, store=True)
+    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager', domain=lambda self: self.return_account_manager_domain(), store=True)
     account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', domain=lambda self: self.return_account_receivable_domain(), readonly=True, store=True)
-    bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain(), readonly=True, store=True)
+    bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain(), store=True)
 
 
     credit_rating = fields.Selection([
