@@ -296,18 +296,18 @@ class PartnerInherit(models.Model):
             count[member_id] = member_count[0][0]
         return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
 
-    # def getBDEId(self):
-    #     self.env.cr.execute(
-    #         """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'BDE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
-    #     members = self.env.cr.fetchall()
-    #     count = {}
-    #     for member_id in members:
-    #         self.env.cr.execute(
-    #             """select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true""",
-    #             member_id)
-    #         member_count = self.env.cr.fetchall()
-    #         count[member_id] = member_count[0][0]
-    #     return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+    def getBDEId(self):
+        self.env.cr.execute(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'BDE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+        members = self.env.cr.fetchall()
+        count = {}
+        for member_id in members:
+            self.env.cr.execute(
+                """select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true""",
+                member_id)
+            member_count = self.env.cr.fetchall()
+            count[member_id] = member_count[0][0]
+        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
 
     # def getAMId(self):
     #     self.env.cr.execute(
@@ -346,8 +346,8 @@ class PartnerInherit(models.Model):
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
             # "account_receivable": saved_partner_id.account_receivable.id,
-            # "account_manager": self.getAMId(),
-            # "bde": self.getBDEId(),
+            "account_manager": 70,
+            "bde": self.getBDEId(),
             "property_supplier_payment_term_id": False,
             "property_account_position_id": False,
             "property_account_receivable_id": 7,
