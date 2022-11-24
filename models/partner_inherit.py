@@ -385,6 +385,8 @@ class PartnerInherit(models.Model):
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
+                val['account_manager'] = 70
+
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
                 self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
