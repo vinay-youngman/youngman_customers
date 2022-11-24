@@ -207,6 +207,7 @@ class PartnerInherit(models.Model):
                                       help="Users having this BD Tag as team name")
 
     same_addr = fields.Boolean(default=False)
+    reqd_email = fields.Boolean(default=False, compute='_email_required', store=False)
 
     @api.onchange('same_addr')
     def _onchange_same_addr(self):
@@ -268,6 +269,16 @@ class PartnerInherit(models.Model):
             if contact.type != 'invoice':
                 _logger.error("updating " + contact.name)
                 contact.property_payment_term_id = new_payment_term
+
+    @api.onchange('category_id')
+    def _email_required(self):
+        tag_list = []
+        for record in self.category_id:
+            tag_list.append(record.name)
+        if "Purchaser" in tag_list:
+            self.reqd_email = True
+        else:
+            self.reqd_email = False
 
     @api.model
     def view_header_get(self, view_id, view_type):

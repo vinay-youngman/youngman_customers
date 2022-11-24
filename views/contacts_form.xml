@@ -67,6 +67,13 @@
                         <attribute name="context">{'default_type': 'contact'}</attribute>
                 </xpath>
 
+                <xpath expr="//field[@name='email']" position="before">
+                    <field name="reqd_email" invisible="True" readonly="1"/>
+                </xpath>
+                <xpath expr="//field[@name='email']" position="replace">
+                    <field name="email" widget="email" context="{'gravatar_image': True}" attrs="{'required': [('reqd_email', '=', True)]}"/>
+                </xpath>
+
             	<xpath expr="//notebook">
                     <page string="Branches" name="branches" autofocus="autofocus" attrs="{'invisible' :[('is_customer_branch','=',True)]}">
                             <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_is_customer_branch': True, 'default_company_type': 'company', 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
