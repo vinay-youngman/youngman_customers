@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Contacts & Customers",
-    'version': '3.0',
+    'version': '3.1',
     'category': 'Sales/CRM',
     'summary': 'Manages Contacts/Customers & Their Branches',
     'description': """

@@ -43,7 +43,7 @@
                     <field name="credit_rating" string="Credit Rating"/>
                     <field name="business_type" string="Business Type"/>
                     <field name="account_receivable" string="Account Receivable" options="{'no_create': True} " attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
-                    <field name="account_manager" string="Account Manager" options="{'no_create': True} " attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', False)]}"/>
+                    <field name="account_manager" string="Account Manager" options="{'no_create': True} " attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="bde" string="BDE" options="{'no_create': True}" attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', False)]}"/>
 <!--                    invisible | is_customer_branch=true, is_company = false-->
 
