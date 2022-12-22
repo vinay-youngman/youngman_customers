@@ -98,47 +98,49 @@ class Partner(models.Model):
     @api.onchange('gstn', 'vat')
     def do_stuff(self):
         try:
-            # if self.non_gst is False:
-                gst = self.vat or self.gstn
-                if not ((gst)):
-                    return
+            gst = self.vat or self.gstn
+            if not ((gst)):
+                return
 
-                if (len(gst) != 15):
-                    return {
-                        'warning': {'title': 'Warning',
-                                    'message': 'Invalid GSTIN. GSTIN number must be 15 digits. Please check.', },
-                    }
+            if (len(gst) != 15):
+                return {
+                    'warning': {'title': 'Warning',
+                                'message': 'Invalid GSTIN. GSTIN number must be 15 digits. Please check.', },
+                }
 
-                if not (re.match("\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}", gst.upper())):
-                    return {
-                        'warning': {'title': 'Warning',
-                                    'message': 'Invalid GSTIN format.\r\n.GSTIN must be in the format nnAAAAAnnnnA_Z_ where n=number, A=alphabet, _=either.', },
-                    }
+            if not (re.match("\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}", gst.upper())):
+                return {
+                    'warning': {'title': 'Warning',
+                                'message': 'Invalid GSTIN format.\r\n.GSTIN must be in the format nnAAAAAnnnnA_Z_ where n=number, A=alphabet, _=either.', },
+                }
 
-                if not (Partner.check_gstin_chksum(gst)):
-                    return {
-                        'warning': {'title': 'Warning',
-                                    'message': 'Invalid GSTIN. Checksum validation failed. It means one or more characters are probably wrong.', },
-                    }
+            if not (Partner.check_gstin_chksum(gst)):
+                return {
+                    'warning': {'title': 'Warning',
+                                'message': 'Invalid GSTIN. Checksum validation failed. It means one or more characters are probably wrong.', },
+                }
 
-                if self.vat:
-                    self.vat = gst.upper()
+            if self.vat:
+                self.vat = gst.upper()
 
-                if self.gstn:
-                    self.gstn = gst.upper()
+            if self.gstn:
+                self.gstn = gst.upper()
 
-                gst_data = Partner.validate_gstn_from_master_india(gst)
-                print(gst_data)
-                if (gst_data['error']):
-                    return {
-                        'warning': {'title': 'Warning',
-                                    'message': 'Invalid GSTIN. Remote validation failed. It means the Gstn does not exist.', },
-                    }
+            gst_data = Partner.validate_gstn_from_master_india(gst)
 
-                _logger.warning(gst_data)
+            if (gst_data['error']):
+                return {
+                    'warning': {'title': 'Warning',
+                                'message': 'Invalid GSTIN. Remote validation failed. It means the Gstn does not exist.', },
+                }
 
-                if self.is_company:
-                    if self.vat[5] == 'C' or self.vat[5] == 'c':
+            _logger.warning(gst_data)
+
+            if self.is_company:
+                if self.vat[5] == 'C' or self.vat[5] == 'c':
+                    self.name = gst_data["data"]["lgnm"]
+                else:
+                    if len(gst_data["data"]["tradeNam"]) == 0:
                         self.name = gst_data["data"]["lgnm"]
                     else:
                         if len(gst_data["data"]["tradeNam"]) == 0:

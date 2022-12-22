@@ -20,9 +20,7 @@ class CrmLead(models.Model):
             return super(CrmLead, self).write(vals)
 
         if self.lead_qualifier and 'user_id' in vals:
-            if (self._uid != self.user_id.id) and self.type == 'lead':
-                raise ValidationError(_('You cant change Salesperson unless you are assigned to it!'))
-            elif self.lead_qualifierid.id != self._uid and self.type == 'lead':
+            if self.lead_qualifier.id != self._uid and self.type == 'lead':
                 raise ValidationError(_('You cant change Salesperson unless you are assigned as LQ to it!'))
         return super(CrmLead, self).write(vals)
 

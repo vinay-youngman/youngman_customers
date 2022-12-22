@@ -28,7 +28,9 @@
                     <field name="sap_ref" string="SAP Ref" invisible="1"/>
                     <field name="is_customer_branch" invisible="1"/>
 
-                    <button name="add_invoice_address" type="object" string="Update Invoice Address" attrs="{'invisible': [('is_customer_branch', '=', False)]}"/>
+                    <button name="sync_customer_details_from_mastersindia" type="object" string="Update Invoice Address" attrs="{'invisible': [('is_customer_branch', '=', False)]}"/>
+                    <button name="sync_customer_details_from_mastersindia" type="object" string="Update Company Details" attrs="{'invisible': ['|', ('is_customer_branch', '=', True), ('company_type', '=', 'person')]}"/>
+
                 </field>
                 <xpath expr="//group[@name='misc']" position="attributes">
                         <attribute name="attrs">{'invisible':True}</attribute>
