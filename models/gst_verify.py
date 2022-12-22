@@ -16,9 +16,19 @@ _logger = logging.getLogger(__name__)
 
 
 
+
+
 class Partner(models.Model):
     _name = 'res.partner'
     _inherit = 'res.partner'
+
+    # non_gst = fields.Boolean(default=False, string="Non GST Customer")
+
+    # @api.onchange('non_gst')
+    # def _onchange_non_gst(self):
+    #     if self.non_gst:
+    #         self.vat = 'NON_PAN'
+    #         self.gstn = 'NON_GST'
 
     @staticmethod
     def get_master_india_access_token():
@@ -85,7 +95,7 @@ class Partner(models.Model):
         response = requests.request("GET", url, headers=headers, data=payload)
         return response.json()
 
-    @api.onchange('gstn','vat')
+    @api.onchange('gstn', 'vat')
     def do_stuff(self):
         try:
             gst = self.vat or self.gstn
@@ -133,22 +143,26 @@ class Partner(models.Model):
                     if len(gst_data["data"]["tradeNam"]) == 0:
                         self.name = gst_data["data"]["lgnm"]
                     else:
-                        self.name = gst_data["data"]["tradeNam"]
+                        if len(gst_data["data"]["tradeNam"]) == 0:
+                            self.name = gst_data["data"]["lgnm"]
+                        else:
+                            self.name = gst_data["data"]["tradeNam"]
 
-            self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
-            self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
-            self.city = gst_data["data"]["pradr"]["addr"]["city"]
-            self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"]["pncd"] is not None else None
-            #self.country_id = self.get_country("IN")
-            company_type = gst_data['data']['ctb']
-            type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-            if(type_id):
-                self.business_type = type_id
-            else:
-                values = {'name': company_type}
-                self.env['business.type'].create(values)
+                self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
+                self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
+                self.city = gst_data["data"]["pradr"]["addr"]["city"]
+                self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"][
+                                                                                 "pncd"] is not None else None
+                # self.country_id = self.get_country("IN")
+                company_type = gst_data['data']['ctb']
                 type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-                self.business_type = type_id
+                if (type_id):
+                    self.business_type = type_id
+                else:
+                    values = {'name': company_type}
+                    self.env['business.type'].create(values)
+                    type_id = self.env['business.type'].search([('name', '=', company_type)]).id
+                    self.business_type = type_id
 
         except Exception as e:
             _logger.error(e.with_traceback())
