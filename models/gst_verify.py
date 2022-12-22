@@ -117,7 +117,7 @@ class Partner(models.Model):
                 self.gstn = gst.upper()
 
             gst_data = Partner.validate_gstn_from_master_india(gst)
-            print(gst_data)
+
             if (gst_data['error']):
                 return {
                     'warning': {'title': 'Warning',

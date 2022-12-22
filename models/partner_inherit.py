@@ -75,7 +75,7 @@ class PartnerInherit(models.Model):
     def _default_bd_tag(self):
         return self.env['res.partner.bd.tag'].browse(self._context.get('bd_tag_id'))
 
-    def _add_invoice_addresses(self, branch):
+    def _sync_customer_details_from_mastersindia(self, branch):
         gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(branch.gstn)
         _logger.error(gstn_data)
         if (gstn_data['error']):
@@ -83,6 +83,12 @@ class PartnerInherit(models.Model):
             error_msg = gstn_data["data"]["error"]["message"]
             raise Exception(error_code + ": " + error_msg)
 
+        if self.is_customer_branch:
+            self._sync_invoice_addresses(branch, gstn_data)
+        elif self.is_customer_branch == False and self.is_company:
+            self.name = gstn_data['data']['tradeNam']
+
+    def _sync_invoice_addresses(self, branch, gstn_data):
         addresses = []
         addresses.append({
             'is_company': False,
@@ -124,8 +130,13 @@ class PartnerInherit(models.Model):
             else:
                 _logger.info("Invoice address already exists")
 
-    def add_invoice_address(self):
-        self._add_invoice_addresses(self)
+    def sync_customer_details_from_mastersindia(self):
+        self._enrich_gstn_from_vat()
+        self._sync_customer_details_from_mastersindia(self) #TODO: why send this as an argument?
+        
+    def _enrich_gstn_from_vat(self):
+        if not self.gstn and len(self.vat) == 15:
+            self.gstn = self.vat
 
     in_beta = fields.Boolean(default=False, string="Exists In Beta", store=True)
     is_customer_branch = fields.Boolean(default=False, string="Is Branch")
@@ -305,7 +316,9 @@ class PartnerInherit(models.Model):
                 member_id)
             member_count = self.env.cr.fetchall()
             count[member_id] = member_count[0][0]
-        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+
+        ids = [id for id in count if all(count[temp] >= count[id] for temp in count)]
+        return ids[0] if len(ids) > 0 else False
 
     def getBDEId(self):
         self.env.cr.execute(
@@ -405,9 +418,11 @@ class PartnerInherit(models.Model):
             else:
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 if saved_partner_id.is_customer_branch == True:
-                    self._add_invoice_addresses(saved_partner_id)
+                    self._sync_customer_details_from_mastersindia(saved_partner_id)
                 _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
                 return saved_partner_id
+# //write method
+
 
     def check_vat(self, cr, uid, ids, context=None):
         user_company = self.pool.get('res.users').browse(cr, uid, uid).company_id
