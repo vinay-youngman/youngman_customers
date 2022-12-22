@@ -16,9 +16,19 @@ _logger = logging.getLogger(__name__)
 
 
 
+
+
 class Partner(models.Model):
     _name = 'res.partner'
     _inherit = 'res.partner'
+
+    # non_gst = fields.Boolean(default=False, string="Non GST Customer")
+
+    # @api.onchange('non_gst')
+    # def _onchange_non_gst(self):
+    #     if self.non_gst:
+    #         self.vat = 'NON_PAN'
+    #         self.gstn = 'NON_GST'
 
     @staticmethod
     def get_master_india_access_token():
@@ -85,70 +95,72 @@ class Partner(models.Model):
         response = requests.request("GET", url, headers=headers, data=payload)
         return response.json()
 
-    @api.onchange('gstn','vat')
+    @api.onchange('gstn', 'vat')
     def do_stuff(self):
         try:
-            gst = self.vat or self.gstn
-            if not ((gst)):
-                return
+            # if self.non_gst is False:
+                gst = self.vat or self.gstn
+                if not ((gst)):
+                    return
 
-            if (len(gst) != 15):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN. GSTIN number must be 15 digits. Please check.', },
-                }
+                if (len(gst) != 15):
+                    return {
+                        'warning': {'title': 'Warning',
+                                    'message': 'Invalid GSTIN. GSTIN number must be 15 digits. Please check.', },
+                    }
 
-            if not (re.match("\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}", gst.upper())):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN format.\r\n.GSTIN must be in the format nnAAAAAnnnnA_Z_ where n=number, A=alphabet, _=either.', },
-                }
+                if not (re.match("\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}", gst.upper())):
+                    return {
+                        'warning': {'title': 'Warning',
+                                    'message': 'Invalid GSTIN format.\r\n.GSTIN must be in the format nnAAAAAnnnnA_Z_ where n=number, A=alphabet, _=either.', },
+                    }
 
-            if not (Partner.check_gstin_chksum(gst)):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN. Checksum validation failed. It means one or more characters are probably wrong.', },
-                }
+                if not (Partner.check_gstin_chksum(gst)):
+                    return {
+                        'warning': {'title': 'Warning',
+                                    'message': 'Invalid GSTIN. Checksum validation failed. It means one or more characters are probably wrong.', },
+                    }
 
-            if self.vat:
-                self.vat = gst.upper()
+                if self.vat:
+                    self.vat = gst.upper()
 
-            if self.gstn:
-                self.gstn = gst.upper()
+                if self.gstn:
+                    self.gstn = gst.upper()
 
-            gst_data = Partner.validate_gstn_from_master_india(gst)
-            print(gst_data)
-            if (gst_data['error']):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN. Remote validation failed. It means the Gstn does not exist.', },
-                }
+                gst_data = Partner.validate_gstn_from_master_india(gst)
+                print(gst_data)
+                if (gst_data['error']):
+                    return {
+                        'warning': {'title': 'Warning',
+                                    'message': 'Invalid GSTIN. Remote validation failed. It means the Gstn does not exist.', },
+                    }
 
-            _logger.warning(gst_data)
+                _logger.warning(gst_data)
 
-            if self.is_company:
-                if self.vat[5] == 'C' or self.vat[5] == 'c':
-                    self.name = gst_data["data"]["lgnm"]
-                else:
-                    if len(gst_data["data"]["tradeNam"]) == 0:
+                if self.is_company:
+                    if self.vat[5] == 'C' or self.vat[5] == 'c':
                         self.name = gst_data["data"]["lgnm"]
                     else:
-                        self.name = gst_data["data"]["tradeNam"]
+                        if len(gst_data["data"]["tradeNam"]) == 0:
+                            self.name = gst_data["data"]["lgnm"]
+                        else:
+                            self.name = gst_data["data"]["tradeNam"]
 
-            self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
-            self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
-            self.city = gst_data["data"]["pradr"]["addr"]["city"]
-            self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"]["pncd"] is not None else None
-            #self.country_id = self.get_country("IN")
-            company_type = gst_data['data']['ctb']
-            type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-            if(type_id):
-                self.business_type = type_id
-            else:
-                values = {'name': company_type}
-                self.env['business.type'].create(values)
+                self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
+                self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
+                self.city = gst_data["data"]["pradr"]["addr"]["city"]
+                self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"][
+                                                                                 "pncd"] is not None else None
+                # self.country_id = self.get_country("IN")
+                company_type = gst_data['data']['ctb']
                 type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-                self.business_type = type_id
+                if (type_id):
+                    self.business_type = type_id
+                else:
+                    values = {'name': company_type}
+                    self.env['business.type'].create(values)
+                    type_id = self.env['business.type'].search([('name', '=', company_type)]).id
+                    self.business_type = type_id
 
         except Exception as e:
             _logger.error(e.with_traceback())

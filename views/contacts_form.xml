@@ -16,14 +16,15 @@
                 </field>
 
                 <field name="vat" position="after">
-                    <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', False)]}" placeholder="Enter GSTN"/>
+                    <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', True)]}" placeholder="Enter GSTN"/>
+<!--                    <field name="non_gst" string="Non GST Customer" attrs="{'invisible': [('is_company', '=', False)]}"/>-->
 <!--                    <field name="in_beta" readonly="1" force_save="1"/>-->
                     <field name="in_beta" force_save="1" attrs="{'invisible': [('is_customer_branch', '=', True), ('is_company', '=', False)], 'readonly':[('in_beta', '=', True)]}"/>
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
+                    <field name="bill_submission_process" options = "{'no_create': True}" />
                     <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="security_cheque" string="Security Cheque" attrs="{'invisible': [('is_company', '=', False)]}"/>
-
                     <field name="sap_ref" string="SAP Ref" invisible="1"/>
                     <field name="is_customer_branch" invisible="1"/>
 
@@ -169,7 +170,7 @@
                         <filter name="group_company" string="Company" context="{'group_by': 'parent_id'}"/>
                         <filter name="group_country" string="Country" context="{'group_by': 'country_id'}"/>
                         <separator/>
-                         <filter string="ACCOUNT MANAGER" name="acma" context="{'group_by': 'account_manager'}"/>
+                        <filter string="ACCOUNT MANAGER" name="acma" context="{'group_by': 'account_manager'}"/>
                         <filter string="ACCOUNT RECEIVABLE" name="acre" context="{'group_by': 'account_receivable'}"/>
                         <filter string="BDE" name="bde" context="{'group_by': 'bde'}"/>
                         <separator/>

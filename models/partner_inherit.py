@@ -14,6 +14,11 @@ from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
+class BillSubmissionProcess(models.Model):
+    _name = 'bill.submission.process'
+    _description = 'Bill Submission Process'
+    name = fields.Char(string='Bill Submission Process', required=True)
+    name = fields.Char(string='Bill Submission Process', required=True)
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
@@ -60,9 +65,10 @@ class BusinessType(models.Model):
 
 class PartnerInherit(models.Model):
     _name = 'res.partner'
-    _inherit = ['res.partner', 'gst.verification', 'business.type']
+    _inherit = ['res.partner', 'gst.verification', 'business.type', 'bill.submission.process']
 
     business_type = fields.Many2one(comodel_name='business.type', string='Business Type')
+    bill_submission_process = fields.Many2one(comodel_name='bill.submission.process', string='Bill Submission Process')
 
     @api.model
     def _get_default_country(self):
@@ -320,18 +326,18 @@ class PartnerInherit(models.Model):
             count[member_id] = member_count[0][0]
         return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
 
-    # def getAMId(self):
-    #     self.env.cr.execute(
-    #         """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT MANAGER' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
-    #     members = self.env.cr.fetchall()
-    #     count = {}
-    #     for member_id in members:
-    #         self.env.cr.execute(
-    #             """select count(id) from res_partner where account_manager=%s and active=true AND is_customer_branch=true""",
-    #             member_id)
-    #         member_count = self.env.cr.fetchall()
-    #         count[member_id] = member_count[0][0]
-    #     return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+    def getAMId(self):
+        self.env.cr.execute(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT MANAGER' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+        members = self.env.cr.fetchall()
+        count = {}
+        for member_id in members:
+            self.env.cr.execute(
+                """select count(id) from res_partner where account_manager=%s and active=true AND is_customer_branch=true""",
+                member_id)
+            member_count = self.env.cr.fetchall()
+            count[member_id] = member_count[0][0]
+        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
 
     def _get_partner_details(self, saved_partner_id, gstn):
         return {
@@ -396,7 +402,8 @@ class PartnerInherit(models.Model):
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
-                val['account_manager'] = 70
+                customer_care = self.env["res.users"].search([('login', '=', 'customercare@youngman.co.in')])
+                val['account_manager'] = customer_care.id if customer_care else False
 
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
