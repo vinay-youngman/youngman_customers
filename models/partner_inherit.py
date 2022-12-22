@@ -311,46 +311,29 @@ class PartnerInherit(models.Model):
             )
         return super().view_header_get(view_id, view_type)
 
-    def getARId(self):
-        self.env.cr.execute(
-            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT RECEIVABLE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
+    def _get_user_with_min_assignment(self, member_sql, count_sql):
+        self.env.cr.execute(member_sql)
         members = self.env.cr.fetchall()
         count = {}
         for member_id in members:
-            self.env.cr.execute(
-                """select count(id) from res_partner where account_receivable=%s and active=true AND is_customer_branch=false AND is_company=true""",
-                member_id)
+            self.env.cr.execute(count_sql, member_id)
             member_count = self.env.cr.fetchall()
             count[member_id] = member_count[0][0]
 
         ids = [id for id in count if all(count[temp] >= count[id] for temp in count)]
         return ids[0] if len(ids) > 0 else False
 
-    def getBDEId(self):
-        self.env.cr.execute(
-            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'BDE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
-        members = self.env.cr.fetchall()
-        count = {}
-        for member_id in members:
-            self.env.cr.execute(
-                """select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true""",
-                member_id)
-            member_count = self.env.cr.fetchall()
-            count[member_id] = member_count[0][0]
-        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+    def getARId(self):
+        return self._get_user_with_min_assignment(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT RECEIVABLE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""",
+            """select count(id) from res_partner where account_receivable=%s and active=true AND is_customer_branch=false AND is_company=true"""
+        )
 
-    def getAMId(self):
-        self.env.cr.execute(
-            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'ACCOUNT MANAGER' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""")
-        members = self.env.cr.fetchall()
-        count = {}
-        for member_id in members:
-            self.env.cr.execute(
-                """select count(id) from res_partner where account_manager=%s and active=true AND is_customer_branch=true""",
-                member_id)
-            member_count = self.env.cr.fetchall()
-            count[member_id] = member_count[0][0]
-        return [id for id in count if all(count[temp] >= count[id] for temp in count)][0]
+    def getBDEId(self):
+        return self._get_user_with_min_assignment(
+            """SELECT crm_team_member.user_id FROM crm_team, crm_team_member WHERE crm_team.name = 'BDE' AND crm_team.id=crm_team_member.crm_team_id and crm_team_member.active=true""",
+            """select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true"""
+        )
 
     def _get_partner_details(self, saved_partner_id, gstn):
         return {
@@ -376,7 +359,7 @@ class PartnerInherit(models.Model):
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
             # "account_receivable": saved_partner_id.account_receivable.id,
-            "account_manager": 70,
+            "account_manager": self._get_customer_care_user_id(),
             "bde": self.getBDEId(),
             "property_supplier_payment_term_id": False,
             "property_account_position_id": False,
@@ -415,8 +398,8 @@ class PartnerInherit(models.Model):
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
-                customer_care = self.env["res.users"].search([('login', '=', 'customercare@youngman.co.in')])
-                val['account_manager'] = customer_care.id if customer_care else False
+
+                val['account_manager'] = self._get_customer_care_user_id()
 
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
@@ -428,7 +411,12 @@ class PartnerInherit(models.Model):
                     self._sync_customer_details_from_mastersindia(saved_partner_id)
                 _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
                 return saved_partner_id
-# //write method
+
+    def _get_customer_care_user_id(self):
+        customer_care = self.env["res.users"].search([('login', '=', 'customercare@youngman.co.in')])
+        return customer_care.id if customer_care else False
+
+        # //write method
 
 
     def check_vat(self, cr, uid, ids, context=None):

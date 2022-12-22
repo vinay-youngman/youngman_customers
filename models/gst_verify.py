@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
 import re
-
+import traceback
 import requests
 import json
 
@@ -164,6 +163,6 @@ class Partner(models.Model):
                     type_id = self.env['business.type'].search([('name', '=', company_type)]).id
                     self.business_type = type_id
 
-        except Exception as e:
-            _logger.error(e.with_traceback())
+        except Exception:
+            _logger.error(traceback.format_exc())
             pass
