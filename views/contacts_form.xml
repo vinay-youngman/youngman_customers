@@ -6,7 +6,9 @@
             <field name="inherit_id" ref="base.view_partner_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//group/group/field[@name='vat']" position="replace">
-                    <field name="vat" string="PAN" attrs="{'invisible': [('is_customer_branch', '=', True)]}" placeholder="Enter PAN/GST"/>
+                    <field name="is_non_gst_customer" string="Non GST Customer" attrs="{'invisible': [('is_company', '=', False)]}"/>
+                    <field name="vat" string="PAN" attrs="{'invisible': ['|', ('is_customer_branch', '=', True), ('company_type', '=', 'person')], 'readonly': [('is_non_gst_customer', '=', False)]}" placeholder="Enter PAN"/>
+                    <field name="gstn" string="GSTN" attrs="{'invisible': ['|', ('company_type', '=', 'person'), ('is_non_gst_customer', '=', True)]}" placeholder="Enter GSTN"/>
                 </xpath>
 
                 <field name="category_id" position="attributes">
@@ -15,13 +17,10 @@
                   </attribute>
                 </field>
 
-                <field name="vat" position="after">
-                    <field name="gstn" string="GSTN" attrs="{'invisible': [('is_customer_branch', '=', True)]}" placeholder="Enter GSTN"/>
-<!--                    <field name="non_gst" string="Non GST Customer" attrs="{'invisible': [('is_company', '=', False)]}"/>-->
-<!--                    <field name="in_beta" readonly="1" force_save="1"/>-->
+                <field name="gstn" position="after">
                     <field name="in_beta" force_save="1" attrs="{'invisible': [('is_customer_branch', '=', True), ('is_company', '=', False)], 'readonly':[('in_beta', '=', True)]}"/>
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
-                    <field name="bill_submission_process" options = "{'no_create': True}" />
+                    <field name="bill_submission_process" attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)], 'required': [('is_company', '=', True),('is_customer_branch', '=', False)]}"/>
                     <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
                     <field name="security_cheque" string="Security Cheque" attrs="{'invisible': [('is_company', '=', False)]}"/>
@@ -46,14 +45,6 @@
                     <field name="credit_rating" string="Credit Rating"/>
                     <field name="business_type" string="Business Type"/>
                     <field name="account_receivable" string="Account Receivable" options="{'no_create': True} " attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
-                    <field name="account_manager" string="Account Manager" options="{'no_create': True} " attrs="{'invisible': [('is_company', '=', False)]}"/>
-                    <field name="bde" string="BDE" options="{'no_create': True}" attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', False)]}"/>
-<!--                    invisible | is_customer_branch=true, is_company = false-->
-
-<!--                    add bde acc man invisible | is_company = false is_customer_branch = false-->
-
-
-
                 </xpath>
             </field>
         </record>
@@ -110,8 +101,7 @@
                                             <group>
                                                 <field name="name" string="Branch Name" attrs="{'required' : True}"/>
                                                 <field name="gstn" string="GSTN" attrs="{'required' : True}" placeholder="Enter GSTN"/>
-                                                <field name="account_manager" string="Account Manager" options="{'no_create': True} "/>
-                                                <field name="bde" string="BDE" options="{'no_create': True}"/>
+                                                <field name="user_id"/>
                                                 <field name="branch_contact_name" string="Contact Name"/>
                                                 <field name="email" widget="email"/>
                                                 <field name="phone" widget="phone"/>
@@ -119,7 +109,6 @@
                                                 <field name="company_id" invisible="1"/>
                                                 <field name="sap_ref" string="SAP Ref" invisible="1"/>
                                                 <field name="is_customer_branch" invisible="1"/>
-
                                             </group>
 
                                             <group>
@@ -131,7 +120,7 @@
                                                     <field name="city" placeholder="City" class="o_address_city"/>
                                                     <field name="state_id" class="o_address_state" placeholder="State" options="{'no_open': True, 'no_quick_create': True}" context="{'country_id': country_id, 'default_country_id': country_id, 'zip': zip}"/>
                                                     <field name="zip" placeholder="ZIP" class="o_address_zip"/>
-                                                    <field name="country_id" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>
+                                                    <field name="country_id" invisible="True" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>
                                                 </div>
                                                 </div>
                                                 <label for="mailing_street" string="Mailing Address"/>
@@ -142,7 +131,7 @@
                                                     <field name="mailing_city" placeholder="City" class="o_address_city"/>
                                                     <field name="mailing_state_id" class="o_address_state" placeholder="State" options="{'no_open': True, 'no_quick_create': True}" context="{'country_id': country_id, 'default_country_id': country_id, 'zip': zip}"/>
                                                     <field name="mailing_zip" placeholder="ZIP" class="o_address_zip"/>
-                                                    <field name="mailing_country_id" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>
+                                                    <field name="mailing_country_id" invisible="True" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>
                                                     </div>
                                                 </div>
                                                 <field name="same_addr" string="Same as Billing Address"/>
@@ -155,9 +144,6 @@
                             </field>
                     </page>
             	</xpath>
-                <xpath expr="//field[@name='property_payment_term_id']" position="attributes">
-                        <attribute name="attrs">{'required' :[('is_customer_branch', '=', False),('is_company', '=', True)]}</attribute>
-                </xpath>
             </field>
         </record>
 
@@ -172,9 +158,7 @@
                         <filter name="group_company" string="Company" context="{'group_by': 'parent_id'}"/>
                         <filter name="group_country" string="Country" context="{'group_by': 'country_id'}"/>
                         <separator/>
-                        <filter string="ACCOUNT MANAGER" name="acma" context="{'group_by': 'account_manager'}"/>
                         <filter string="ACCOUNT RECEIVABLE" name="acre" context="{'group_by': 'account_receivable'}"/>
-                        <filter string="BDE" name="bde" context="{'group_by': 'bde'}"/>
                         <separator/>
                     </group>
                 </xpath>
