@@ -9,8 +9,7 @@ import requests
 from odoo import api, fields, models, _
 
 from odoo.modules import get_module_resource
-
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -137,46 +136,48 @@ class PartnerInherit(models.Model):
                 _logger.info("Invoice address already exists")
 
     def sync_customer_details_from_mastersindia(self):
-        self._enrich_gstn_from_vat()
         self._sync_customer_details_from_mastersindia(self) #TODO: why send this as an argument?
-        
-    def _enrich_gstn_from_vat(self):
-        if not self.gstn and len(self.vat) == 15:
-            self.gstn = self.vat
+
 
     in_beta = fields.Boolean(default=False, string="Exists In Beta", store=True)
     is_customer_branch = fields.Boolean(default=False, string="Is Branch")
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
 
-
-    def return_account_manager_domain(self):
-        acc_m_team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT MANAGER')]).id
-        domain = self.env['crm.team.member'].search([('crm_team_id', '=', acc_m_team_id)]).user_id.ids
-        return [('id', 'in', domain)]
-
-    # def return_account_manager_readonly(self):
-    #     uid = self.env.uid
-    #     team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT MANAGER')]).user_id
-    #     if uid == team_id:
-    #         return False
-    #     else:
-    #         return True
-
     def return_account_receivable_domain(self):
         acc_r_team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT RECEIVABLE')]).id
         domain = self.env['crm.team.member'].search([('crm_team_id', '=', acc_r_team_id)]).user_id.ids
         return [('id', 'in', domain)]
 
-    def return_bde_domain(self):
-        bde_team_id = self.env['crm.team'].search([('name', '=', 'BDE')]).id
-        domain = self.env['crm.team.member'].search([('crm_team_id', '=', bde_team_id)]).user_id.ids
-        return [('id', 'in', domain)]
+    def return_team_domain(self):
+        """
+            If logged in user is team lead of inside sales he can change the Sales Person and Sales Team
+            Else the default is Inside sales
+        :return:
+        """
+        if self.env.user == self.env['crm.team'].search([('name', '=', 'INSIDE SALES')]).user_id:
+            team_id = self.env['crm.team'].search([('name', 'in', ['INSIDE SALES', 'PAM'])]).ids
+            return [('id', 'in', team_id)]
+        else:
+            team_id = self.env['crm.team'].search([('name', 'in', ['INSIDE SALES'])]).ids
+            return [('id', 'in', team_id)]
 
-    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager', domain=lambda self: self.return_account_manager_domain(), store=True)
-    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', domain=lambda self: self.return_account_receivable_domain(), readonly=True, store=True)
-    bde = fields.Many2one(comodel_name='res.users', string='BDE', domain=lambda self: self.return_bde_domain(), store=True)
+    @api.onchange('team_id')
+    def _on_team_change(self):
+        self.user_id = False
+        if not self.team_id:
+            return
+        if self.env.user == self.env['crm.team'].search([('name', '=', 'INSIDE SALES')]).user_id:
+            domain = self.env['crm.team.member'].search([('crm_team_id', '=', self.team_id.id)]).user_id.ids
+            return  {'domain': {'user_id': [('id', 'in', domain)]}}
+        else:
+            return {'domain': {'user_id': [('id', '=', self.env.user.id)]}}
 
+    user_id = fields.Many2one(comodel_name='res.users', string='Salesperson', default=lambda self: self.env.user)
+    team_id = fields.Many2one(comodel_name='crm.team', string='Sales Team', domain=lambda self: self.return_team_domain(), default=lambda self: self.env['crm.team'].search([('name', '=', 'INSIDE SALES')]))
+    account_receivable = fields.Many2one(comodel_name='res.users', string='Account Receivable', domain=lambda self: self.return_account_receivable_domain(), store=True)
+    account_manager = fields.Many2one(comodel_name='res.users', string='Account Manager')
+    bde = fields.Many2one(comodel_name='res.users', string='BDE',  readonly=True, store=True)
 
     credit_rating = fields.Selection([
         ('0', 'A'),
@@ -193,10 +194,10 @@ class PartnerInherit(models.Model):
     rental_advance = fields.Boolean(default=True, string="Rental Advance")
     rental_order = fields.Boolean(default=True, string="Rental Order")
     security_cheque = fields.Boolean(default=True, string="Security Cheque")
+    is_non_gst_customer = fields.Boolean(default=False, string="Is Non GST Customer")
     branch_contact_name = fields.Char(string="Contact Name")
 
-    country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country,
-                                 ondelete='restrict')
+    country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country, ondelete='restrict')
 
     # Mailing Address
     mailing_street = fields.Char(string="Mailing Address")
@@ -204,8 +205,7 @@ class PartnerInherit(models.Model):
     mailing_city = fields.Char()
     mailing_state_id = fields.Many2one("res.country.state", string='Mailing State', ondelete='restrict',
                                        domain="[('country_id', '=', mailing_country_id)]")
-    mailing_country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country,
-                                         ondelete='restrict')
+    mailing_country_id = fields.Many2one('res.country', string='Mailing Country', default=_get_default_country, ondelete='restrict')
     mailing_zip = fields.Char(string='Mailing Pincode', change_default=True)
 
     child_ids = fields.One2many('res.partner', 'parent_id', string='Contact',
@@ -255,6 +255,8 @@ class PartnerInherit(models.Model):
 
     @api.onchange('user_id')
     def _onchange_salesperson(self):
+        if not self.user_id:
+            return
         new_user_id = self.user_id
         linked_contacts = self.child_ids
         _logger.error("called _onchange_user_id")
@@ -267,9 +269,10 @@ class PartnerInherit(models.Model):
 
     @api.onchange('team_id')
     def _onchange_salesteam(self):
+        if not self.team_id:
+            return
         new_team_id = self.team_id
         linked_contacts = self.child_ids
-        _logger.error("called _onchange_team_id")
         for contact in linked_contacts:
             if contact.type != 'invoice':
                 _logger.error(
@@ -281,7 +284,6 @@ class PartnerInherit(models.Model):
     def _onchange_property_payment_term_id(self):
         new_payment_term = self.property_payment_term_id
         linked_contacts = self.child_ids
-        _logger.error("called _onchange_property_payment_term_id")
         for contact in linked_contacts:
             if contact.type != 'invoice':
                 _logger.error("updating " + contact.name)
@@ -335,15 +337,15 @@ class PartnerInherit(models.Model):
             """select count(id) from res_partner where bde=%s and active=true AND is_customer_branch=true"""
         )
 
-    def _get_partner_details(self, saved_partner_id, gstn):
+    def _get_default_branch_details(self, saved_partner_id):
         return {
             "is_company": True,
             "active": True,
             "company_type": "company",
-            "name": gstn,
+            "name": saved_partner_id.gstn,
             "parent_id": saved_partner_id.id,
-            "company_name": gstn,
-            "gstn": gstn,
+            "company_name": saved_partner_id.gstn,
+            "gstn": saved_partner_id.gstn,
             "type": "contact",
             "street": saved_partner_id.street,
             "street2": saved_partner_id.street2,
@@ -358,9 +360,9 @@ class PartnerInherit(models.Model):
             "mobile": saved_partner_id.mobile,
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
-            # "account_receivable": saved_partner_id.account_receivable.id,
-            "account_manager": self._get_customer_care_user_id(),
-            "bde": self.getBDEId(),
+            "account_receivable": False,
+            "user_id": saved_partner_id.user_id.id,
+            "bde": False,
             "property_supplier_payment_term_id": False,
             "property_account_position_id": False,
             "property_account_receivable_id": 7,
@@ -368,24 +370,20 @@ class PartnerInherit(models.Model):
             "branch_ids": []
         }
 
-    def _get_gstn(self, val):
-        if 'gstn' in val and val['gstn'] is not False:
-            return val['gstn']
-
-        if 'vat' not in val:
-            return False
-
-        if val['vat'] and len(val['vat']) == 15:
-            return val['vat']
-
-        if val['vat'] and len(val['vat']) == 10:
-            return False
-
-        raise Exception("Vat is not valid")
+    @api.onchange('gstn')
+    def onchange_gstn(self):
+        if self.gstn:
+            self.vat = self.gstn[slice(2, 12, 1)]
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', self.gstn[slice(2, 12, 1)])])
+            if existing_customer:
+                return {
+                    'warning': {'title': 'Warning', 'message': 'Customer with same PAN already exists'}
+                }
+        else:
+            self.vat = False
 
     @api.model_create_multi
     def create(self, vals):
-        _logger.info("evt=CreatePartner msg=Inside create method before super")
 
         for val in vals:
             if ('is_company' in val and val['is_company'] is False) or (
@@ -393,17 +391,20 @@ class PartnerInherit(models.Model):
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 return saved_partner_id
 
-            gstn = self._get_gstn(val)
-            val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else val['vat']
+            gstn = val['gstn']
+            val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
+            val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
+
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])])
+            if existing_customer:
+                raise UserError(_("Customer with same PAN already exists"))
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
-
-                val['account_manager'] = self._get_customer_care_user_id()
-
+                val['user_id'] = self.user_id if self.user_id else self.env.user.id
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
-                self.env['res.partner'].create(self._get_partner_details(saved_partner_id, gstn))
+                self.env['res.partner'].create(self._get_default_branch_details(saved_partner_id))
                 return saved_partner_id
             else:
                 saved_partner_id = super(PartnerInherit, self).create([val])
@@ -411,12 +412,6 @@ class PartnerInherit(models.Model):
                     self._sync_customer_details_from_mastersindia(saved_partner_id)
                 _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
                 return saved_partner_id
-
-    def _get_customer_care_user_id(self):
-        customer_care = self.env["res.users"].search([('login', '=', 'customercare@youngman.co.in')])
-        return customer_care.id if customer_care else False
-
-        # //write method
 
 
     def check_vat(self, cr, uid, ids, context=None):

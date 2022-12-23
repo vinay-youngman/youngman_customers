@@ -13,21 +13,9 @@ import os
 
 _logger = logging.getLogger(__name__)
 
-
-
-
-
 class Partner(models.Model):
     _name = 'res.partner'
     _inherit = 'res.partner'
-
-    # non_gst = fields.Boolean(default=False, string="Non GST Customer")
-
-    # @api.onchange('non_gst')
-    # def _onchange_non_gst(self):
-    #     if self.non_gst:
-    #         self.vat = 'NON_PAN'
-    #         self.gstn = 'NON_GST'
 
     @staticmethod
     def get_master_india_access_token():
@@ -94,49 +82,39 @@ class Partner(models.Model):
         response = requests.request("GET", url, headers=headers, data=payload)
         return response.json()
 
-    @api.onchange('gstn', 'vat')
+    def _validate_gstn_length(self):
+        if len(self.gstn) != 15:
+            raise Exception('Invalid GSTIN. GSTIN number must be 15 digits. Please check.')
+
+    def _validate_gstn_pattern(self):
+        if not (re.match("\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}", self.gstn.upper())):
+            raise Exception('Invalid GSTIN format.\r\n.GSTIN must be in the format nnAAAAAnnnnA_Z_ where n=number, A=alphabet, _=either.')
+
+    def _validate_gstn_checksum(self):
+        if not (Partner.check_gstin_chksum(self.gstn)):
+            raise Exception('Invalid GSTIN. Checksum validation failed. It means one or more characters are probably wrong.')
+
+    @api.onchange('gstn')
     def do_stuff(self):
         try:
-            gst = self.vat or self.gstn
-            if not ((gst)):
+            if not self.gstn or self.is_non_gst_customer:
                 return
 
-            if (len(gst) != 15):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN. GSTIN number must be 15 digits. Please check.', },
-                }
+            self._validate_gstn_length()
+            self._validate_gstn_pattern()
+            self._validate_gstn_checksum()
 
-            if not (re.match("\d{2}[A-Z]{5}\d{4}[A-Z]{1}\d[Z]{1}[A-Z\d]{1}", gst.upper())):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN format.\r\n.GSTIN must be in the format nnAAAAAnnnnA_Z_ where n=number, A=alphabet, _=either.', },
-                }
+            self.gstn = self.gstn.upper()
 
-            if not (Partner.check_gstin_chksum(gst)):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN. Checksum validation failed. It means one or more characters are probably wrong.', },
-                }
-
-            if self.vat:
-                self.vat = gst.upper()
-
-            if self.gstn:
-                self.gstn = gst.upper()
-
-            gst_data = Partner.validate_gstn_from_master_india(gst)
+            gst_data = Partner.validate_gstn_from_master_india(self.gstn)
 
             if (gst_data['error']):
-                return {
-                    'warning': {'title': 'Warning',
-                                'message': 'Invalid GSTIN. Remote validation failed. It means the Gstn does not exist.', },
-                }
+                raise Exception("Invalid GSTIN. Remote validation failed. It means the GSTN does not exist or masters india api is down.")
 
             _logger.warning(gst_data)
 
             if self.is_company:
-                if self.vat[5] == 'C' or self.vat[5] == 'c':
+                if self.gstn[5] == 'C' or self.gstn[5] == 'c':
                     self.name = gst_data["data"]["lgnm"]
                 else:
                     if len(gst_data["data"]["tradeNam"]) == 0:
@@ -150,11 +128,11 @@ class Partner(models.Model):
                 self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
                 self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
                 self.city = gst_data["data"]["pradr"]["addr"]["city"]
-                self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"][
-                                                                                 "pncd"] is not None else None
-                # self.country_id = self.get_country("IN")
+                self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"]["pncd"] is not None else None
+                self.country_id = self.get_country("IN")
                 company_type = gst_data['data']['ctb']
                 type_id = self.env['business.type'].search([('name', '=', company_type)]).id
+
                 if (type_id):
                     self.business_type = type_id
                 else:
@@ -163,6 +141,16 @@ class Partner(models.Model):
                     type_id = self.env['business.type'].search([('name', '=', company_type)]).id
                     self.business_type = type_id
 
-        except Exception:
+        except Exception as e:
+            self.name = False
+            self.street = False
+            self.street2 = False
+            self.city = False
+            self.zip = False
+            self.business_type = False
+            self.bill_submission_process = False
+
             _logger.error(traceback.format_exc())
-            pass
+            return {
+                'warning': {'title': 'Warning', 'message':str(e)}
+            }
