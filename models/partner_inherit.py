@@ -17,7 +17,6 @@ class BillSubmissionProcess(models.Model):
     _name = 'bill.submission.process'
     _description = 'Bill Submission Process'
     name = fields.Char(string='Bill Submission Process', required=True)
-    name = fields.Char(string='Bill Submission Process', required=True)
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
@@ -86,12 +85,12 @@ class PartnerInherit(models.Model):
         if (gstn_data['error']):
             error_code = gstn_data["data"]["error"]["error_cd"]
             error_msg = gstn_data["data"]["error"]["message"]
-            raise Exception(error_code + ": " + error_msg)
+            raise UserError("Failed to retrieve information from Masters India" + error_code + ": " + error_msg)
 
         if self.is_customer_branch:
             self._sync_invoice_addresses(branch, gstn_data)
         elif self.is_customer_branch == False and self.is_company:
-            if len(gstn_data["data"]["tradeNam"]) == 0:
+            if self.gstn[5] == 'C' or self.gstn[5] == 'c':
                 self.name = gstn_data["data"]["lgnm"]
             else:
                 if len(gstn_data["data"]["tradeNam"]) == 0:
@@ -155,7 +154,7 @@ class PartnerInherit(models.Model):
 
     def _ar_fields_readonly(self):
         ar_team_head = self.env['crm.team'].search([('name', '=', 'ACCOUNT RECEIVABLE')])
-        if not ar_team_head or ar_team_head.user_id:
+        if not ar_team_head or not ar_team_head.user_id:
             self.ar_fields_readonly = True
         else:
             self.ar_fields_readonly =  ar_team_head.user_id.id != self.env.user.id
