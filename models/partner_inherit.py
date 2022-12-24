@@ -91,33 +91,40 @@ class PartnerInherit(models.Model):
         if self.is_customer_branch:
             self._sync_invoice_addresses(branch, gstn_data)
         elif self.is_customer_branch == False and self.is_company:
-            self.name = gstn_data['data']['tradeNam']
+            if len(gstn_data["data"]["tradeNam"]) == 0:
+                self.name = gstn_data["data"]["lgnm"]
+            else:
+                if len(gstn_data["data"]["tradeNam"]) == 0:
+                    self.name = gstn_data["data"]["lgnm"]
+                else:
+                    self.name = gstn_data["data"]["tradeNam"]
 
-    def _sync_invoice_addresses(self, branch, gstn_data):
-        addresses = []
-        addresses.append({
+    def _concatenate_address_string(self, address_strings):
+        arr = [x for x in address_strings if x]
+        return ', '.join(map(str, arr))
+
+    def _get_odoo_format_addr_from_master_india_addre(self, master_india_address, branch):
+        country_id = self._get_default_country().id
+        addr = {
             'is_company': False,
             'type': 'invoice',
-            'name': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
+            'name': self._concatenate_address_string([master_india_address["bno"], master_india_address["bnm"]]),
             'parent_id': branch.id,
-            'street': gstn_data["data"]["pradr"]["addr"]["bno"] + gstn_data["data"]["pradr"]["addr"]["bnm"],
-            'street2': gstn_data["data"]["pradr"]["addr"]["st"],
-            'city': gstn_data["data"]["pradr"]["addr"]["city"],
-            'zip': str(gstn_data["data"]["pradr"]["addr"]["pncd"]) if gstn_data["data"]["pradr"]["addr"][
-                                                                          "pncd"] is not None else None
-        })
+            'street': self._concatenate_address_string([master_india_address["flno"], master_india_address["bno"], master_india_address["bnm"]]),
+            'street2': self._concatenate_address_string([master_india_address["st"], master_india_address["loc"], master_india_address["dst"]]),
+            'state_id': self.env['res.country.state'].search([('name', 'ilike', master_india_address["stcd"]), ('country_id', '=', country_id)]).id,
+            'city': master_india_address["city"],
+            'zip': master_india_address["pncd"]
+        }
+
+        return addr
+
+    def _sync_invoice_addresses(self, branch, gstn_data):
+        addresses = [self._get_odoo_format_addr_from_master_india_addre(gstn_data["data"]["pradr"]["addr"], branch)]
+
         for addr in gstn_data["data"]["adadr"]:
-            addresses.append({
-                'is_company': False,
-                'type': 'invoice',
-                'parent_id': branch.id,
-                'name': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
-                'street': addr["addr"]["flno"] + ", " + addr["addr"]["bno"] + ", " + addr["addr"]["bnm"],
-                'street2': addr["addr"]["st"] + ", " + addr["addr"]["loc"] + ", " + addr["addr"]["dst"],
-                'city': addr["addr"]["city"],
-                'zip': str(addr["addr"]["pncd"]) if addr["addr"]["pncd"] is not None else None
-            })
-        _logger.error("Address = " + str(len(addresses)))
+            addresses.append(self._get_odoo_format_addr_from_master_india_addre(addr["addr"], branch))
+
         for address in addresses:
             existing_address = self.env['res.partner'].search(
                 [('is_company', '=', False),
@@ -143,6 +150,15 @@ class PartnerInherit(models.Model):
     is_customer_branch = fields.Boolean(default=False, string="Is Branch")
     gstn = fields.Char(string="GSTN")
     sap_ref = fields.Char()
+
+    ar_fields_readonly = fields.Boolean(compute="_ar_fields_readonly", readonly=True, store=False)
+
+    def _ar_fields_readonly(self):
+        ar_team_head = self.env['crm.team'].search([('name', '=', 'ACCOUNT RECEIVABLE')])
+        if not ar_team_head or ar_team_head.user_id:
+            self.ar_fields_readonly = True
+        else:
+            self.ar_fields_readonly =  ar_team_head.user_id.id != self.env.user.id
 
     def return_account_receivable_domain(self):
         acc_r_team_id = self.env['crm.team'].search([('name', '=', 'ACCOUNT RECEIVABLE')]).id

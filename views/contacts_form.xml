@@ -21,11 +21,12 @@
                     <field name="in_beta" force_save="1" attrs="{'invisible': [('is_customer_branch', '=', True), ('is_company', '=', False)], 'readonly':[('in_beta', '=', True)]}"/>
                     <field name="cpl_status" string="CPL Status" attrs="{'invisible': [('is_company', '=', False)], 'readonly': [('is_company', '=', True)]}"/>
                     <field name="bill_submission_process" attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)], 'required': [('is_company', '=', True),('is_customer_branch', '=', False)]}"/>
-                    <field name="rental_advance" string="Rental Advance" attrs="{'invisible': [('is_company', '=', False)]}"/>
-                    <field name="rental_order" string="Rental Order" attrs="{'invisible': [('is_company', '=', False)]}"/>
-                    <field name="security_cheque" string="Security Cheque" attrs="{'invisible': [('is_company', '=', False)]}"/>
+                    <field name="rental_advance" string="Rental Advance" attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': [('is_company', '=', False)]}"/>
+                    <field name="rental_order" string="Rental Order" attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': [('is_company', '=', False)]}"/>
+                    <field name="security_cheque" string="Security Cheque" attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': [('is_company', '=', False)]}"/>
                     <field name="sap_ref" string="SAP Ref" invisible="1"/>
                     <field name="is_customer_branch" invisible="1"/>
+                    <field name="ar_fields_readonly" invisible="1"/>
 
                     <button name="sync_customer_details_from_mastersindia" type="object" string="Update Invoice Address" attrs="{'invisible': [('is_customer_branch', '=', False)]}"/>
                     <button name="sync_customer_details_from_mastersindia" type="object" string="Update Company Details" attrs="{'invisible': ['|', ('is_customer_branch', '=', True), ('company_type', '=', 'person')]}"/>
@@ -40,11 +41,17 @@
                 <xpath expr="//group[@name='purchase']" position="attributes">
                         <attribute name="attrs">{'invisible':True}</attribute>
                 </xpath>
+
+                <xpath expr="//field[@name='property_payment_term_id']" position="attributes">
+                    <attribute name="attrs">{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}</attribute>
+                </xpath>
+
+
                 <xpath expr="//group[@name='sale']">
-                    <field name="credit_limit" string="Credit Limit"/>
-                    <field name="credit_rating" string="Credit Rating"/>
-                    <field name="business_type" string="Business Type"/>
-                    <field name="account_receivable" string="Account Receivable" options="{'no_create': True} " attrs="{'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
+                    <field name="credit_limit" string="Credit Limit" attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
+                    <field name="credit_rating" string="Credit Rating" attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
+                    <field name="business_type" string="Business Type" attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
+                    <field name="account_receivable" string="Account Receivable" options="{'no_create': True} " attrs="{'readonly': [('ar_fields_readonly', '=', True)], 'invisible': ['|',('is_company', '=', False),('is_customer_branch', '=', True)]}"/>
                 </xpath>
             </field>
         </record>
@@ -61,6 +68,9 @@
                         <attribute name="context">{'default_type': 'contact'}</attribute>
                 </xpath>
 
+                <xpath expr="//notebook/page[@name='contact_addresses']/field/form//field[@name='mobile']" position="after">
+                    <field name="category_id" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}" placeholder="Tags..."/>
+                </xpath>
                 <xpath expr="//field[@name='email']" position="before">
                     <field name="reqd_email" invisible="True" readonly="1"/>
                 </xpath>
