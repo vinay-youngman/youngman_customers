@@ -17,7 +17,6 @@ class BillSubmissionProcess(models.Model):
     _name = 'bill.submission.process'
     _description = 'Bill Submission Process'
     name = fields.Char(string='Bill Submission Process', required=True)
-    name = fields.Char(string='Bill Submission Process', required=True)
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
@@ -86,12 +85,13 @@ class PartnerInherit(models.Model):
         if (gstn_data['error']):
             error_code = gstn_data["data"]["error"]["error_cd"]
             error_msg = gstn_data["data"]["error"]["message"]
-            raise Exception(error_code + ": " + error_msg)
+            raise UserError("Failed to retrieve information from Masters India" + error_code + ": " + error_msg)
 
         if self.is_customer_branch:
             self._sync_invoice_addresses(branch, gstn_data)
         elif self.is_customer_branch == False and self.is_company:
-            if len(gstn_data["data"]["tradeNam"]) == 0:
+            self.vat = self.gstn[slice(2, 12, 1)]
+            if self.gstn[5] == 'C' or self.gstn[5] == 'c':
                 self.name = gstn_data["data"]["lgnm"]
             else:
                 if len(gstn_data["data"]["tradeNam"]) == 0:
@@ -155,7 +155,7 @@ class PartnerInherit(models.Model):
 
     def _ar_fields_readonly(self):
         ar_team_head = self.env['crm.team'].search([('name', '=', 'ACCOUNT RECEIVABLE')])
-        if not ar_team_head or ar_team_head.user_id:
+        if not ar_team_head or not ar_team_head.user_id:
             self.ar_fields_readonly = True
         else:
             self.ar_fields_readonly =  ar_team_head.user_id.id != self.env.user.id
@@ -390,7 +390,7 @@ class PartnerInherit(models.Model):
     def onchange_gstn(self):
         if self.gstn:
             self.vat = self.gstn[slice(2, 12, 1)]
-            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', self.gstn[slice(2, 12, 1)])])
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', self.vat)])
             if existing_customer:
                 return {
                     'warning': {'title': 'Warning', 'message': 'Customer with same PAN already exists'}
@@ -411,9 +411,9 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
             val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
 
-            # existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', vat['gstn'])])
-            # if existing_customer:
-            #     raise UserError(_("Customer with same PAN already exists"))
+            #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
+            #if existing_customer:
+            #    raise UserError(_("Customer with same PAN already exists"))
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()

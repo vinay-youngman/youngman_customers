@@ -97,7 +97,7 @@ class Partner(models.Model):
     @api.onchange('gstn')
     def do_stuff(self):
         try:
-            if not self.gstn or self.is_non_gst_customer:
+            if not self.gstn or self.is_non_gst_customer or not self.is_company:
                 return
 
             self._validate_gstn_length()
@@ -113,33 +113,30 @@ class Partner(models.Model):
 
             _logger.warning(gst_data)
 
-            if self.is_company:
-                if self.gstn[5] == 'C' or self.gstn[5] == 'c':
+
+            if self.gstn[5] == 'C':
+                self.name = gst_data["data"]["lgnm"]
+            else:
+                if len(gst_data["data"]["tradeNam"]) == 0:
                     self.name = gst_data["data"]["lgnm"]
                 else:
-                    if len(gst_data["data"]["tradeNam"]) == 0:
-                        self.name = gst_data["data"]["lgnm"]
-                    else:
-                        if len(gst_data["data"]["tradeNam"]) == 0:
-                            self.name = gst_data["data"]["lgnm"]
-                        else:
-                            self.name = gst_data["data"]["tradeNam"]
+                    self.name = gst_data["data"]["tradeNam"]
 
-                self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
-                self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
-                self.city = gst_data["data"]["pradr"]["addr"]["city"]
-                self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"]["pncd"] is not None else None
-                self.country_id = self.get_country("IN")
-                company_type = gst_data['data']['ctb']
+            self.street = gst_data["data"]["pradr"]["addr"]["bno"] + gst_data["data"]["pradr"]["addr"]["bnm"]
+            self.street2 = gst_data["data"]["pradr"]["addr"]["st"]
+            self.city = gst_data["data"]["pradr"]["addr"]["city"]
+            self.zip = str(gst_data["data"]["pradr"]["addr"]["pncd"]) if gst_data["data"]["pradr"]["addr"]["pncd"] is not None else None
+            self.country_id = self.get_country("IN")
+            company_type = gst_data['data']['ctb']
+            type_id = self.env['business.type'].search([('name', '=', company_type)]).id
+
+            if (type_id):
+                self.business_type = type_id
+            else:
+                values = {'name': company_type}
+                self.env['business.type'].create(values)
                 type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-
-                if (type_id):
-                    self.business_type = type_id
-                else:
-                    values = {'name': company_type}
-                    self.env['business.type'].create(values)
-                    type_id = self.env['business.type'].search([('name', '=', company_type)]).id
-                    self.business_type = type_id
+                self.business_type = type_id
 
         except Exception as e:
             self.name = False
