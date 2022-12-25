@@ -90,6 +90,7 @@ class PartnerInherit(models.Model):
         if self.is_customer_branch:
             self._sync_invoice_addresses(branch, gstn_data)
         elif self.is_customer_branch == False and self.is_company:
+            self.vat = self.gstn[slice(2, 12, 1)]
             if self.gstn[5] == 'C' or self.gstn[5] == 'c':
                 self.name = gstn_data["data"]["lgnm"]
             else:
@@ -389,7 +390,7 @@ class PartnerInherit(models.Model):
     def onchange_gstn(self):
         if self.gstn:
             self.vat = self.gstn[slice(2, 12, 1)]
-            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', self.gstn[slice(2, 12, 1)])])
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', self.vat)])
             if existing_customer:
                 return {
                     'warning': {'title': 'Warning', 'message': 'Customer with same PAN already exists'}
@@ -410,7 +411,7 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
             val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
 
-            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])])
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
             if existing_customer:
                 raise UserError(_("Customer with same PAN already exists"))
 
