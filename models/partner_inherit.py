@@ -376,13 +376,13 @@ class PartnerInherit(models.Model):
             "mobile": saved_partner_id.mobile,
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
-            "account_receivable": False,
+            "account_receivable": saved_partner_id.account_receivable,
             "user_id": saved_partner_id.user_id.id,
             "bde": False,
-            "property_supplier_payment_term_id": False,
-            "property_account_position_id": False,
-            "property_account_receivable_id": 7,
-            "property_account_payable_id": 26,
+            "property_supplier_payment_term_id": saved_partner_id.property_supplier_payment_term_id,
+            "property_account_position_id": saved_partner_id.property_account_position_id,
+            "property_account_receivable_id": saved_partner_id.account_receivable,
+            "property_account_payable_id": saved_partner_id.account_receivable,
             "branch_ids": []
         }
 
