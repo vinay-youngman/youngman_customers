@@ -17,6 +17,7 @@ class BillSubmissionProcess(models.Model):
     _name = 'bill.submission.process'
     _description = 'Bill Submission Process'
     name = fields.Char(string='Bill Submission Process', required=True)
+    code = fields.Char(string='Bill Submission Process Code')
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
