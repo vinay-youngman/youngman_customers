@@ -419,9 +419,10 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
             val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
 
-            #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
-            #if existing_customer:
-            #    raise UserError(_("Customer with same PAN already exists"))
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
+            if existing_customer:
+                assigned_to = existing_customer.user_id.login if existing_customer.user_id else "No one"
+                raise UserError(_("Customer with same PAN already exists and is assigned to " + assigned_to))
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
