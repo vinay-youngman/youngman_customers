@@ -420,6 +420,8 @@ class PartnerInherit(models.Model):
         for validation_field in validation_fields:
             if val.get(validation_field):
                 domain = [(validation_field, '=', val[validation_field])]
+                if self.id:
+                    domain = domain + [('id','!=', self.id)]
                 if val.get('parent_id'):
                     domain = domain + [('parent_id','=', val['parent_id'])]
 
@@ -429,6 +431,10 @@ class PartnerInherit(models.Model):
                     raise ValidationError(_("Contact with same {} already exists:- ID: {}, Name: {}".format(validation_field, contact.id, contact.name)))
 
 
+    def write(self, vals):
+        if _is_individual(self):
+            self._raise_exception_if_contact_exists(vals)
+        return super().write(vals)
 
     @api.model_create_multi
     def create(self, vals):
