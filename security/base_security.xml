@@ -19,12 +19,6 @@
       <field name="category_id" ref="youngman_customers.module_management"/>
     </record>
 
-     <record id="account_manager" model="res.groups">
-            <field name="name">Account Manager</field>
-            <field name="category_id" ref="youngman_customers.module_management"/>
-            <field name="implied_ids" eval="[(4, ref('youngman_customers.group_user'))]"/>
-     </record>
-
      <record id="account_receivable" model="res.groups">
             <field name="name">Account Receivable</field>
             <field name="category_id" ref="youngman_customers.module_management"/>
