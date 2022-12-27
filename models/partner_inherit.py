@@ -68,6 +68,14 @@ class PartnerInherit(models.Model):
     business_type = fields.Many2one(comodel_name='business.type', string='Business Type')
     bill_submission_process = fields.Many2one(comodel_name='bill.submission.process', string='Bill Submission Process')
 
+    def _get_default_property_account_payable(self):
+        account_payable = self.env['account.account'].sudo().search([('internal_type', '=', 'payable'), ('active', '=', True)], limit=1)
+        return account_payable.id if account_payable else False
+
+    def _get_default_property_account_receivable(self):
+        account_receivable = self.env['account.account'].sudo().search([('internal_type', '=', 'receivable'), ('active', '=', True)], limit=1)
+        return account_receivable.id if account_receivable else False
+
     @api.model
     def _get_default_country(self):
         country = self.env['res.country'].search([('code', '=', 'IN')], limit=1)
@@ -381,8 +389,8 @@ class PartnerInherit(models.Model):
             "bde": False,
             "property_supplier_payment_term_id": False,
             "property_account_position_id": False,
-            "property_account_receivable_id": 7,
-            "property_account_payable_id": 26,
+            "property_account_receivable_id": self._get_default_property_account_receivable(),
+            "property_account_payable_id": self._get_default_property_account_receivable(),
             "branch_ids": []
         }
 
@@ -411,9 +419,10 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
             val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
 
-            #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
-            #if existing_customer:
-            #    raise UserError(_("Customer with same PAN already exists"))
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
+            if existing_customer:
+                assigned_to = existing_customer.user_id.login if existing_customer.user_id else "No one"
+                raise UserError(_("Customer with same PAN already exists and is assigned to " + assigned_to))
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
