@@ -61,6 +61,10 @@ class BusinessType(models.Model):
     name = fields.Char(string='Business Type')
 
 
+def _is_individual(val):
+    return 'company_type' in val and val['company_type'] == 'person'
+
+
 class PartnerInherit(models.Model):
     _name = 'res.partner'
     _inherit = ['res.partner', 'gst.verification', 'business.type', 'bill.submission.process']
@@ -406,12 +410,40 @@ class PartnerInherit(models.Model):
         else:
             self.vat = False
 
+    def _search_contacts_based_on_filters(self, filters):
+        domain = [('is_company', '=', False)] + filters
+        return self.env['res.partner'].sudo().search(domain, limit = 1)
+
+    def _raise_exception_if_contact_exists(self, val):
+        validation_fields = ['email', 'phone', 'mobile']
+
+        for validation_field in validation_fields:
+            if val.get(validation_field):
+                domain = [(validation_field, '=', val[validation_field])]
+                if self.id:
+                    domain = domain + [('id','!=', self.id)]
+                if val.get('parent_id'):
+                    domain = domain + [('parent_id','=', val['parent_id'])]
+
+                contact = self._search_contacts_based_on_filters(domain)
+
+                if contact:
+                    raise ValidationError(_("Contact with same {} already exists:- ID: {}, Name: {}".format(validation_field, contact.id, contact.name)))
+
+
+    def write(self, vals):
+        if _is_individual(self):
+            self._raise_exception_if_contact_exists(vals)
+        return super().write(vals)
+
     @api.model_create_multi
     def create(self, vals):
 
         for val in vals:
-            if ('is_company' in val and val['is_company'] is False) or (
-                    'company_type' in val and val['company_type'] == 'person'):
+            if _is_individual(val):
+                self._raise_exception_if_contact_exists(val)
+
+            if ('is_company' in val and val['is_company'] is False) or _is_individual(val):
                 saved_partner_id = super(PartnerInherit, self).create([val])
                 return saved_partner_id
 
