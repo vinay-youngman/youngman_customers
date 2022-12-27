@@ -15,8 +15,16 @@ _logger = logging.getLogger(__name__)
 class BillSubmissionProcess(models.Model):
     _name = 'bill.submission.process'
     _description = 'Bill Submission Process'
-    name = fields.Char(string='Bill Submission Process', required=True)
+    name = fields.Char(string=''
+                              'Bill Submission Process', required=True)
     code = fields.Char(string='Bill Submission Process Code')
+
+class Phone(models.Model):
+    _name = 'phone'
+    _description = 'Phone'
+    name = fields.Char(string=''
+                              'Phone', required=True)
+    code = fields.Char(string='Phone')
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
@@ -384,8 +392,8 @@ class PartnerInherit(models.Model):
             "vat": saved_partner_id.vat,
             "is_customer_branch": True,
             "function": False,
-            "phone": saved_partner_id.phone,
             "mobile": saved_partner_id.mobile,
+            "phone": saved_partner_id.phone,
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
             "account_receivable": self.account_receivable,
@@ -607,3 +615,5 @@ class PartnerBdTag(models.Model):
             name = name.split(' / ')[-1]
             args = [('name', operator, name)] + args
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
+
+
