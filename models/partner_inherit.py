@@ -297,7 +297,7 @@ class PartnerInherit(models.Model):
         linked_contacts = self.child_ids
         _logger.error("called _onchange_user_id")
         for contact in linked_contacts:
-            if contact.type != 'invoice':
+            if contact.type != 'invoice' and contact._origin.id:
                 _logger.error(
                     "updating res_partner user id = " + str(new_user_id.id) + " for user " + str(contact._origin.id))
                 self._cr.execute('update res_partner set user_id = %s where id = %s',
@@ -459,10 +459,9 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
             val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
 
-            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
-            if existing_customer:
-                assigned_to = existing_customer.user_id.login if existing_customer.user_id else "No one"
-                raise UserError(_("Customer with same PAN already exists and is assigned to " + assigned_to))
+            #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
+            #if existing_customer:
+            #    raise UserError(_("Customer with same PAN already exists"))
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
