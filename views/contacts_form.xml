@@ -34,8 +34,8 @@
                     <field name="is_customer_branch" invisible="1"/>
                     <field name="ar_fields_readonly" invisible="1"/>
 
-                    <button name="sync_customer_details_from_mastersindia" type="object" string="Update Invoice Address" attrs="{'invisible': [('is_customer_branch', '=', False)]}"/>
-                    <button name="sync_customer_details_from_mastersindia" type="object" string="Update Company Details" attrs="{'invisible': ['|', ('is_customer_branch', '=', True), ('company_type', '=', 'person')]}"/>
+                    <button name="sync_customer_details_from_mastersindia" type="object" string="Update Invoice Address" attrs="{'invisible': ['|', ('is_customer_branch', '=', False), ('is_non_gst_customer', '=', True)]}"/>
+                    <button name="sync_customer_details_from_mastersindia" type="object" string="Update Company Details" attrs="{'invisible': ['|', ('is_customer_branch', '=', True), '|', ('company_type', '=', 'person'), ('is_non_gst_customer', '=', True)]}"/>
 
                 </field>
                 <xpath expr="//group[@name='misc']" position="attributes">
@@ -77,6 +77,12 @@
                 <xpath expr="//notebook/page[@name='contact_addresses']/field/form//field[@name='mobile']" position="after">
                     <field name="category_id" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}" placeholder="Tags..."/>
                 </xpath>
+
+                <xpath expr="//notebook/page[@name='contact_addresses']/field/kanban/templates//div[@class='oe_kanban_details']/field[@name='name']" position="after">
+                    <field name="category_id" widget="many2many_tags" options="{'color_field': 'color', 'no_create_edit': True}"/>
+                </xpath>
+
+
                 <xpath expr="//field[@name='email']" position="before">
                     <field name="reqd_email" invisible="True" readonly="1"/>
                 </xpath>
@@ -87,18 +93,23 @@
 
             	<xpath expr="//notebook">
                     <page string="Branches" name="branches" autofocus="autofocus" attrs="{'invisible' :[('is_customer_branch','=',True)]}">
-                            <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_is_customer_branch': True, 'default_company_type': 'company', 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
+                            <field name="branch_ids" mode="kanban" context="{'default_parent_id': active_id, 'default_is_non_gst_customer': is_non_gst_customer,'default_is_customer_branch': True, 'default_company_type': 'company', 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': lang, 'default_user_id': user_id, 'default_type': 'other'}">
                                 <kanban>
-                                    <field name="gstn"/>
+                                    <field name="is_non_gst_customer" invisible="True"/>
+                                    <field name="gstn" attrs="{'invisible' :[('is_non_gst_customer','=',True)]}"/>
+                                    <field name="vat" attrs="{'invisible' :[('is_non_gst_customer','=',False)]}"/>
                                     <field name="city"/>
                                     <field name="zip"/>
                                     <templates>
                                         <t t-name="kanban-box">
                                             <div t-att-class="'oe_kanban_global_click'">
                                                 <div class="oe_kanban_details">
-                                                    <field name="gstn"/>
+                                                    <field name="name"/>
                                                     <div>
+                                                        <field name="street"/>
+                                                        <field name="street2"/>
                                                         <field name="city"/>
+                                                        <field name="state_id"/>
                                                         <field name="zip"/>
                                                     </div>
                                                     </div>

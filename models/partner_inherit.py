@@ -73,7 +73,7 @@ class PartnerInherit(models.Model):
     _name = 'res.partner'
     _inherit = ['res.partner', 'gst.verification', 'business.type', 'bill.submission.process']
 
-    business_type = fields.Many2one(comodel_name='business.type', string='Business Type')
+    business_type = fields.Many2one(comodel_name='business.type', string='Business Type', default=lambda self: "Proprietorship" if self.is_non_gst_customer else False)
     bill_submission_process = fields.Many2one(comodel_name='bill.submission.process', string='Bill Submission Process')
 
     def _get_default_property_account_payable(self):
@@ -96,6 +96,9 @@ class PartnerInherit(models.Model):
         return self.env['res.partner.bd.tag'].browse(self._context.get('bd_tag_id'))
 
     def _sync_customer_details_from_mastersindia(self, branch):
+        if branch.is_non_gst_customer:
+            return
+
         gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(branch.gstn)
         _logger.error(gstn_data)
         if (gstn_data['error']):
@@ -374,7 +377,7 @@ class PartnerInherit(models.Model):
             "is_company": True,
             "active": True,
             "company_type": "company",
-            "name": saved_partner_id.gstn,
+            "name": saved_partner_id.vat if saved_partner_id.is_non_gst_customer else saved_partner_id.gstn,
             "parent_id": saved_partner_id.id,
             "company_name": saved_partner_id.gstn,
             "gstn": saved_partner_id.gstn,
@@ -387,6 +390,7 @@ class PartnerInherit(models.Model):
             "country_id": saved_partner_id.country_id.id,
             "vat": saved_partner_id.vat,
             "is_customer_branch": True,
+            "is_non_gst_customer": saved_partner_id.is_non_gst_customer,
             "function": False,
             "mobile": saved_partner_id.mobile,
             "phone": saved_partner_id.phone,
@@ -456,7 +460,7 @@ class PartnerInherit(models.Model):
                 self._raise_exception_if_contact_exists(val)
             else:
                 gstn = val['gstn']
-                vat = gstn[slice(2, 12, 1)] if gstn is not False else False
+                vat = val['vat'] if val.get('is_non_gst_customer') else gstn[slice(2, 12, 1)] if gstn is not False else False
                 self._raise_exception_if_customer_exists(vat)
                 val['vat'] = vat
                 val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
@@ -469,8 +473,6 @@ class PartnerInherit(models.Model):
             if record.is_company and not record.is_customer_branch:
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
                 self.env['res.partner'].create(self._get_default_branch_details(record))
-            if record.is_customer_branch:
-                self._sync_customer_details_from_mastersindia(record)
 
         return saved_records
 
