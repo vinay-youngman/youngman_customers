@@ -15,8 +15,16 @@ _logger = logging.getLogger(__name__)
 class BillSubmissionProcess(models.Model):
     _name = 'bill.submission.process'
     _description = 'Bill Submission Process'
-    name = fields.Char(string='Bill Submission Process', required=True)
+    name = fields.Char(string=''
+                              'Bill Submission Process', required=True)
     code = fields.Char(string='Bill Submission Process Code')
+
+class Phone(models.Model):
+    _name = 'phone'
+    _description = 'Phone'
+    name = fields.Char(string=''
+                              'Phone', required=True)
+    code = fields.Char(string='Phone')
 
 class GstVerification(models.Model):
     _name = 'gst.verification'
@@ -73,11 +81,11 @@ class PartnerInherit(models.Model):
     bill_submission_process = fields.Many2one(comodel_name='bill.submission.process', string='Bill Submission Process')
 
     def _get_default_property_account_payable(self):
-        account_payable = self.env['account.account'].sudo().search([('internal_type', '=', 'payable'), ('active', '=', True)], limit=1)
+        account_payable = self.env['account.account'].sudo().search([('internal_type', '=', 'payable')], limit=1)
         return account_payable.id if account_payable else False
 
     def _get_default_property_account_receivable(self):
-        account_receivable = self.env['account.account'].sudo().search([('internal_type', '=', 'receivable'), ('active', '=', True)], limit=1)
+        account_receivable = self.env['account.account'].sudo().search([('internal_type', '=', 'receivable')], limit=1)
         return account_receivable.id if account_receivable else False
 
     @api.model
@@ -289,7 +297,7 @@ class PartnerInherit(models.Model):
         linked_contacts = self.child_ids
         _logger.error("called _onchange_user_id")
         for contact in linked_contacts:
-            if contact.type != 'invoice':
+            if contact.type != 'invoice' and contact._origin.id:
                 _logger.error(
                     "updating res_partner user id = " + str(new_user_id.id) + " for user " + str(contact._origin.id))
                 self._cr.execute('update res_partner set user_id = %s where id = %s',
@@ -384,8 +392,8 @@ class PartnerInherit(models.Model):
             "vat": saved_partner_id.vat,
             "is_customer_branch": True,
             "function": False,
-            "phone": saved_partner_id.phone,
             "mobile": saved_partner_id.mobile,
+            "phone": saved_partner_id.phone,
             "email": saved_partner_id.email,
             "property_payment_term_id": False,
             "account_receivable": self.account_receivable,
@@ -451,10 +459,9 @@ class PartnerInherit(models.Model):
             val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
             val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
 
-            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
-            if existing_customer:
-                assigned_to = existing_customer.user_id.login if existing_customer.user_id else "No one"
-                raise UserError(_("Customer with same PAN already exists and is assigned to " + assigned_to))
+            #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
+            #if existing_customer:
+            #    raise UserError(_("Customer with same PAN already exists"))
 
             if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
                 val['account_receivable'] = self.getARId()
@@ -607,3 +614,5 @@ class PartnerBdTag(models.Model):
             name = name.split(' / ')[-1]
             args = [('name', operator, name)] + args
         return self._search(args, limit=limit, access_rights_uid=name_get_uid)
+
+
