@@ -219,7 +219,7 @@ class PartnerInherit(models.Model):
         ('A', 'A'),
         ('B', 'B'),
         ('C', 'C'),
-    ], string='Credit Rating', default='2')
+    ], string='Credit Rating', default='C')
 
     cpl_status = fields.Selection([
         ('LEGAL', 'LEGAL'),
