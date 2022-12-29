@@ -423,7 +423,7 @@ class PartnerInherit(models.Model):
         return self.env['res.partner'].sudo().search(domain, limit = 1)
 
     def _raise_exception_if_contact_exists(self, val):
-        validation_fields = ['email', 'phone', 'mobile']
+        validation_fields = ['phone', 'mobile']
 
         for validation_field in validation_fields:
             if val.get(validation_field):
