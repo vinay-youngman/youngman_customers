@@ -216,15 +216,15 @@ class PartnerInherit(models.Model):
     bde = fields.Many2one(comodel_name='res.users', string='BDE',  readonly=True, store=True)
 
     credit_rating = fields.Selection([
-        ('0', 'A'),
-        ('1', 'B'),
-        ('2', 'C'),
+        ('A', 'A'),
+        ('B', 'B'),
+        ('C', 'C'),
     ], string='Credit Rating', default='2')
 
     cpl_status = fields.Selection([
-        ('0', 'LEGAL'),
-        ('1', 'BLOCKED'),
-        ('2', 'UNBLOCKED'),
+        ('LEGAL', 'LEGAL'),
+        ('BLOCKED', 'BLOCKED'),
+        ('UNBLOCKED', 'UNBLOCKED'),
     ], string='CPL Status')
 
     rental_advance = fields.Boolean(default=True, string="Rental Advance")
