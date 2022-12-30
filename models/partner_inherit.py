@@ -69,15 +69,11 @@ class BusinessType(models.Model):
     name = fields.Char(string='Business Type')
 
 
-def _is_individual(val):
-    return 'company_type' in val and val['company_type'] == 'person'
-
-
 class PartnerInherit(models.Model):
     _name = 'res.partner'
     _inherit = ['res.partner', 'gst.verification', 'business.type', 'bill.submission.process']
 
-    business_type = fields.Many2one(comodel_name='business.type', string='Business Type')
+    business_type = fields.Many2one(comodel_name='business.type', string='Business Type', default=lambda self: "Proprietorship" if self.is_non_gst_customer else False)
     bill_submission_process = fields.Many2one(comodel_name='bill.submission.process', string='Bill Submission Process')
 
     def _get_default_property_account_payable(self):
@@ -100,6 +96,9 @@ class PartnerInherit(models.Model):
         return self.env['res.partner.bd.tag'].browse(self._context.get('bd_tag_id'))
 
     def _sync_customer_details_from_mastersindia(self, branch):
+        if branch.is_non_gst_customer:
+            return
+
         gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(branch.gstn)
         _logger.error(gstn_data)
         if (gstn_data['error']):
@@ -378,7 +377,7 @@ class PartnerInherit(models.Model):
             "is_company": True,
             "active": True,
             "company_type": "company",
-            "name": saved_partner_id.gstn,
+            "name": saved_partner_id.vat if saved_partner_id.is_non_gst_customer else saved_partner_id.gstn,
             "parent_id": saved_partner_id.id,
             "company_name": saved_partner_id.gstn,
             "gstn": saved_partner_id.gstn,
@@ -391,6 +390,7 @@ class PartnerInherit(models.Model):
             "country_id": saved_partner_id.country_id.id,
             "vat": saved_partner_id.vat,
             "is_customer_branch": True,
+            "is_non_gst_customer": saved_partner_id.is_non_gst_customer,
             "function": False,
             "mobile": saved_partner_id.mobile,
             "phone": saved_partner_id.phone,
@@ -405,6 +405,7 @@ class PartnerInherit(models.Model):
             "property_account_payable_id": self._get_default_property_account_receivable(),
             "branch_ids": []
         }
+
 
     @api.onchange('gstn')
     def onchange_gstn(self):
@@ -422,8 +423,14 @@ class PartnerInherit(models.Model):
         domain = [('is_company', '=', False)] + filters
         return self.env['res.partner'].sudo().search(domain, limit = 1)
 
+    def _raise_exception_if_customer_exists(self, vat):
+        #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
+        #if existing_customer:
+        #    raise UserError(_("Customer with same PAN already exists"))
+        pass
+
     def _raise_exception_if_contact_exists(self, val):
-        validation_fields = ['email', 'phone', 'mobile']
+        validation_fields = []
 
         for validation_field in validation_fields:
             if val.get(validation_field):
@@ -440,42 +447,34 @@ class PartnerInherit(models.Model):
 
 
     def write(self, vals):
-        if _is_individual(self):
-            self._raise_exception_if_contact_exists(vals)
+        for id in self.ids:
+            record = self.env["res.partner"].search([('id', '=', id)])
+            if record.type == 'contact' and not record.is_company:
+                self._raise_exception_if_contact_exists(vals)
         return super().write(vals)
 
     @api.model_create_multi
     def create(self, vals):
-
         for val in vals:
-            if _is_individual(val):
+            if val['type'] == 'contact' and not val['is_company']:
                 self._raise_exception_if_contact_exists(val)
-
-            if ('is_company' in val and val['is_company'] is False) or _is_individual(val):
-                saved_partner_id = super(PartnerInherit, self).create([val])
-                return saved_partner_id
-
-            gstn = val['gstn']
-            val['vat'] = gstn[slice(2, 12, 1)] if gstn is not False else False
-            val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
-
-            #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
-            #if existing_customer:
-            #    raise UserError(_("Customer with same PAN already exists"))
-
-            if 'branch_ids' in val and len(val['branch_ids']) == 0 and val['is_customer_branch'] == False:
+            else:
+                gstn = val['gstn']
+                vat = val['vat'] if val.get('is_non_gst_customer') else gstn[slice(2, 12, 1)] if gstn is not False else False
+                self._raise_exception_if_customer_exists(vat)
+                val['vat'] = vat
+                val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
                 val['account_receivable'] = self.getARId()
                 val['user_id'] = self.user_id if self.user_id else self.env.user.id
-                saved_partner_id = super(PartnerInherit, self).create([val])
+
+        saved_records = super(PartnerInherit, self).create(vals)
+
+        for record in saved_records:
+            if record.is_company and not record.is_customer_branch:
                 _logger.info("evt=CreatePartner msg=Creating a default branch for new customer")
-                self.env['res.partner'].create(self._get_default_branch_details(saved_partner_id))
-                return saved_partner_id
-            else:
-                saved_partner_id = super(PartnerInherit, self).create([val])
-                if saved_partner_id.is_customer_branch == True:
-                    self._sync_customer_details_from_mastersindia(saved_partner_id)
-                _logger.info("evt=CreatePartner msg=Branch already exits. Creating only customer")
-                return saved_partner_id
+                self.env['res.partner'].create(self._get_default_branch_details(record))
+
+        return saved_records
 
 
     def check_vat(self, cr, uid, ids, context=None):
