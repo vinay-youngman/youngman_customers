@@ -424,10 +424,9 @@ class PartnerInherit(models.Model):
         return self.env['res.partner'].sudo().search(domain, limit = 1)
 
     def _raise_exception_if_customer_exists(self, vat):
-        #existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch','=', False), ('vat', '=', val['vat'])], limit=1)
-        #if existing_customer:
-        #    raise UserError(_("Customer with same PAN already exists"))
-        pass
+        existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch', '=', False), ('vat', '=', vat)], limit=1)
+        if existing_customer:
+            raise UserError(_("Customer with same PAN already exists"))
 
     def _raise_exception_if_contact_exists(self, val):
         validation_fields = []
