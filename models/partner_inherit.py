@@ -467,7 +467,7 @@ class PartnerInherit(models.Model):
     @api.model_create_multi
     def create(self, vals):
         for val in vals:
-            if val['type'] == 'contact' and not val['is_company']:
+            if val.get('type') == 'contact' and not val['is_company']:
                 self._raise_exception_if_contact_exists(val)
             else:
                 gstn = val['gstn']
