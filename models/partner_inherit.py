@@ -406,6 +406,22 @@ class PartnerInherit(models.Model):
             "branch_ids": []
         }
 
+    @api.onchange('vat')
+    def _onchange_vat(self):
+        if self.vat:
+            existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch', '=', False), ('vat', '=', self.vat)], limit=1)
+            if existing_customer:
+                self.vat = False
+                self.gstn = False
+                self.name = False
+                self.street = False
+                self.street2 = False
+                self.city = False
+                self.zip = False
+                self.business_type = False
+                self.bill_submission_process = False
+                raise UserError(_("Customer with same PAN {} already exists with id {}".format(existing_customer.vat, existing_customer.id)))
+
 
     @api.onchange('gstn')
     def onchange_gstn(self):
@@ -423,10 +439,6 @@ class PartnerInherit(models.Model):
         domain = [('is_company', '=', False)] + filters
         return self.env['res.partner'].sudo().search(domain, limit = 1)
 
-    def _raise_exception_if_customer_exists(self, vat):
-        existing_customer = self.env['res.partner'].sudo().search([('is_company', '=', True), ('is_customer_branch', '=', False), ('vat', '=', vat)], limit=1)
-        if existing_customer:
-            raise UserError(_("Customer with same PAN already exists"))
 
     def _raise_exception_if_contact_exists(self, val):
         validation_fields = []
@@ -460,7 +472,6 @@ class PartnerInherit(models.Model):
             else:
                 gstn = val['gstn']
                 vat = val['vat'] if val.get('is_non_gst_customer') else gstn[slice(2, 12, 1)] if gstn is not False else False
-                self._raise_exception_if_customer_exists(vat)
                 val['vat'] = vat
                 val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
                 val['account_receivable'] = self.getARId()
