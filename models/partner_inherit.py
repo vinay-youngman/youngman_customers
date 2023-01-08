@@ -469,6 +469,8 @@ class PartnerInherit(models.Model):
         for val in vals:
             if val.get('type') == 'contact' and not val['is_company']:
                 self._raise_exception_if_contact_exists(val)
+            elif val.get('type') == 'invoice':
+                pass
             else:
                 gstn = val['gstn']
                 vat = val['vat'] if val.get('is_non_gst_customer') else gstn[slice(2, 12, 1)] if gstn is not False else False
