@@ -95,11 +95,11 @@ class PartnerInherit(models.Model):
     def _default_bd_tag(self):
         return self.env['res.partner.bd.tag'].browse(self._context.get('bd_tag_id'))
 
-    def _sync_customer_details_from_mastersindia(self, branch):
-        if branch.is_non_gst_customer:
+    def sync_customer_details_from_mastersindia(self):
+        if self.is_non_gst_customer:
             return
 
-        gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(branch.gstn)
+        gstn_data = super(PartnerInherit, self).validate_gstn_from_master_india(self.gstn)
         _logger.error(gstn_data)
         if (gstn_data['error']):
             error_code = gstn_data["data"]["error"]["error_cd"]
@@ -107,7 +107,7 @@ class PartnerInherit(models.Model):
             raise UserError("Failed to retrieve information from Masters India" + error_code + ": " + error_msg)
 
         if self.is_customer_branch:
-            self._sync_invoice_addresses(branch, gstn_data)
+            self._sync_invoice_addresses(self, gstn_data)
         elif self.is_customer_branch == False and self.is_company:
             self.vat = self.gstn[slice(2, 12, 1)]
             if self.gstn[5] == 'C' or self.gstn[5] == 'c':
@@ -122,13 +122,13 @@ class PartnerInherit(models.Model):
         arr = [x for x in address_strings if x]
         return ', '.join(map(str, arr))
 
-    def _get_odoo_format_addr_from_master_india_addre(self, master_india_address, branch):
+    def _get_odoo_format_addr_from_master_india_addre(self, master_india_address):
         country_id = self._get_default_country().id
         addr = {
             'is_company': False,
             'type': 'invoice',
             'name': self._concatenate_address_string([master_india_address["bno"], master_india_address["bnm"]]),
-            'parent_id': branch.id,
+            'parent_id': self.id,
             'street': self._concatenate_address_string([master_india_address["flno"], master_india_address["bno"], master_india_address["bnm"]]),
             'street2': self._concatenate_address_string([master_india_address["st"], master_india_address["loc"], master_india_address["dst"]]),
             'state_id': self.env['res.country.state'].search([('name', 'ilike', master_india_address["stcd"]), ('country_id', '=', country_id)]).id,
@@ -138,17 +138,17 @@ class PartnerInherit(models.Model):
 
         return addr
 
-    def _sync_invoice_addresses(self, branch, gstn_data):
-        addresses = [self._get_odoo_format_addr_from_master_india_addre(gstn_data["data"]["pradr"]["addr"], branch)]
+    def _sync_invoice_addresses(self, gstn_data):
+        addresses = [self._get_odoo_format_addr_from_master_india_addre(gstn_data["data"]["pradr"]["addr"])]
 
         for addr in gstn_data["data"]["adadr"]:
-            addresses.append(self._get_odoo_format_addr_from_master_india_addre(addr["addr"], branch))
+            addresses.append(self._get_odoo_format_addr_from_master_india_addre(addr["addr"]))
 
         for address in addresses:
             existing_address = self.env['res.partner'].search(
                 [('is_company', '=', False),
                  ('type', '=', 'invoice'),
-                 ('parent_id', '=', branch.id),
+                 ('parent_id', '=', self.id),
                  ('name', '=', address['name']),
                  ('street', '=', address['street']),
                  ('street2', '=', address['street2']),
@@ -162,7 +162,7 @@ class PartnerInherit(models.Model):
                 _logger.info("Invoice address already exists")
 
     def sync_customer_details_from_mastersindia(self):
-        self._sync_customer_details_from_mastersindia(self) #TODO: why send this as an argument?
+        self.sync_customer_details_from_mastersindia()
 
 
     in_beta = fields.Boolean(default=False, string="Exists In Beta", store=True)
