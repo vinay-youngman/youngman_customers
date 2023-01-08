@@ -475,6 +475,10 @@ class PartnerInherit(models.Model):
                 gstn = val['gstn']
                 vat = val['vat'] if val.get('is_non_gst_customer') else gstn[slice(2, 12, 1)] if gstn is not False else False
                 val['vat'] = vat
+
+                if val.get('is_non_gst_customer'):
+                    val['gstn'] = "NO_GST_" + val['vat']
+
                 val['property_payment_term_id'] = self.env["account.payment.term"].search([('name', 'ilike', 'Immediate Payment')]).id
                 val['account_receivable'] = self.getARId()
                 val['user_id'] = self.user_id if self.user_id else self.env.user.id
