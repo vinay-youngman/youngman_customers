@@ -19,7 +19,8 @@
         'views/lead_lost.xml',
         'views/crm_tag_noedit.xml',
         'views/contacts_form.xml',
-        'views/send_to_beta.xml'
+        'views/send_to_beta.xml',
+        'data/cron.xml'
     ],
 
     'application': True,
